@@ -1,6 +1,7 @@
 # ABM
 ABM project course
 
+[Nagel-Schreckenberg](https://en.wikipedia.org/wiki/Nagel%E2%80%93Schreckenberg_model)
 
 # snelweg - banen
 study self-organization	- hierdoor zorgen meer banen niet voor minder files
