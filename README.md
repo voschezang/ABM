@@ -15,6 +15,6 @@ optioneel: rij-strategie, bv aanvallend vs rustig rijden
 beste route op basis van lokale informatie (vijandige boten)
 agents kiezen strategie: copy, aanvallend, etc
 - welke strategie is het beste?
-
+- alt: hoeveel boten moet een agent in de gaten houden?
 
 
