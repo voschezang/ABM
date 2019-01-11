@@ -30,7 +30,7 @@ agents kiezen strategie: copy, aanvallend, etc
 
 ### Using `make`
 
-Make sure that `pip3` is installed (python version >= 3.6).
+Make sure that `pip`/`pip3` is installed (python version >= 3.6).
 On Mac or Linux run the following commands in your terminal. On Windows you may have to install [make](http://gnuwin32.sourceforge.net/packages/make.htm) for PowerShell .
 
 ```
