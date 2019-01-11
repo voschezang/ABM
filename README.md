@@ -28,8 +28,8 @@ agents kiezen strategie: copy, aanvallend, etc
 
 # Setup
 
-Open terminal (or equivalent) and run:
-It is assumed that `pip3` is installed.
+Make sure that `pip3` is installed.
+On Mac or Linux run the following commands in your terminal. Alternatively, you can copy the corresponding commands from `Makefile`.
 
 ```
 git clone https://github.com/voschezang/ABM
