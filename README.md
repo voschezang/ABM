@@ -38,7 +38,7 @@ make deps
 ```
 
 
-## (Alternative) Manual setup
+### (Alternative) Manual setup
 
 Install all packages listed in `requirements.txt`. Shortcut:
 ```
@@ -57,7 +57,7 @@ Start server and run a simulation in your browser
 make run
 ```
 
-## (Alternative) Manually run progam
+### (Alternative) Manually run progam
 
 Depending on your python installation one of
 ```
