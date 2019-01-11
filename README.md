@@ -24,3 +24,39 @@ agents kiezen strategie: copy, aanvallend, etc
 - alt: hoeveel boten moet een agent in de gaten houden?
 
 
+
+
+# Setup
+
+### Using `make`
+
+Make sure that `pip`/`pip3` is installed (python version >= 3.6).
+On Mac or Linux run the following commands in your terminal. On Windows you may have to install [make](http://gnuwin32.sourceforge.net/packages/make.htm) for PowerShell .
+
+```
+git clone https://github.com/voschezang/ABM
+cd AMB
+make deps
+```
+
+
+### (Alternative) Manual setup
+
+Install all packages listed in `requirements.txt`. Shortcut: `pip3 install -r requirements.txt`
+
+
+# Run
+
+Start server and run a simulation in your browser
+```
+make run
+```
+
+### (Alternative) Manually run progam
+
+Use an IDE or, depending on your python installation, use one of
+```
+python3 run.py
+python run.py
+pythonw run.py
+```
