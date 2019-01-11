@@ -42,14 +42,7 @@ make deps
 
 ### (Alternative) Manual setup
 
-Install all packages listed in `requirements.txt`. Shortcut:
-```
-pip3 install -r requirements.txt
-```
-or
-```
-conda install --yes --file requirements.txt
-```
+Install all packages listed in `requirements.txt`. Shortcut: `pip3 install -r requirements.txt`
 
 
 # Run
