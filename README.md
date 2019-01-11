@@ -59,12 +59,9 @@ make run
 
 ### (Alternative) Manually run progam
 
-Depending on your python installation one of
+Use an IDE or, depending on your python installation, use one of
 ```
 python3 run.py
 python run.py
 pythonw run.py
 ```
-
-If you are using anaconda...
-
