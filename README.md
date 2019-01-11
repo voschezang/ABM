@@ -28,8 +28,8 @@ agents kiezen strategie: copy, aanvallend, etc
 
 # Setup
 
-Make sure that `pip3` is installed.
-On Mac or Linux run the following commands in your terminal. Alternatively, you can copy the corresponding commands from `Makefile`.
+Make sure that `pip3` is installed (python version >= 3.6).
+On Mac or Linux run the following commands in your terminal. On Windows you may have to install [make](http://gnuwin32.sourceforge.net/packages/make.htm) for PowerShell .
 
 ```
 git clone https://github.com/voschezang/ABM
@@ -37,9 +37,34 @@ cd AMB
 make deps
 ```
 
+
+## (Alternative) Manual setup
+
+Install all packages listed in `requirements.txt`. Shortcut:
+```
+pip3 install -r requirements.txt
+```
+or
+```
+conda install --yes --file requirements.txt
+```
+
+
 # Run
 
 Start server and run a simulation in your browser
 ```
 make run
 ```
+
+## (Alternative) Manually run progam
+
+Depending on your python installation one of
+```
+python3 run.py
+python run.py
+pythonw run.py
+```
+
+If you are using anaconda...
+
