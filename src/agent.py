@@ -3,102 +3,65 @@ import numpy as np
 from mesa import Agent
 
 
-class Boid(Agent):
-    '''
-    A Boid-style flocker agent.
+class Car(Agent):
 
-    The agent follows three behaviors to flock:
-        - Cohesion: steering towards neighboring agents.
-        - Separation: avoiding getting too close to any other agent.
-        - Alignment: try to fly in the same direction as the neighbors.
+    def __init__(self, unique_id, model, pos, vel):
+        """Create a `Car` agent
 
-    Boids have a vision that defines the radius in which they look for their
-    neighbors to flock with. Their speed (a scalar) and velocity (a vector)
-    define their movement. Separation is their desired minimum distance from
-    any other Boid.
-    '''
+        Parameters
+        ----------
+        unique_id -- unique id of the agent.
+        model -- the model the agent is part of.
+        pos -- initial position of the car.
+        vel -- initial velocity of the car.
+        """
 
-    def __init__(self,
-                 unique_id,
-                 model,
-                 pos,
-                 speed,
-                 velocity,
-                 vision,
-                 separation,
-                 cohere=0.025,
-                 separate=0.25,
-                 match=0.04):
-        '''
-        Create a new Boid flocker agent.
-
-        Args:
-            unique_id: Unique agent identifyer.
-            pos: Starting position
-            speed: Distance to move per step.
-            heading: numpy vector for the Boid's direction of movement.
-            vision: Radius to look around for nearby Boids.
-            separation: Minimum distance to maintain from other Boids.
-            cohere: the relative importance of matching neighbors' positions
-            separate: the relative importance of avoiding close neighbors
-            match: the relative importance of matching neighbors' headings
-
-        '''
         super().__init__(unique_id, model)
-        self.pos = np.array(pos)
-        self.speed = speed
-        self.velocity = velocity
-        self.vision = vision
-        self.separation = separation
-        self.cohere_factor = cohere
-        self.separate_factor = separate
-        self.match_factor = match
+        self.pos = np.array(pos, dtype=float)
+        self.vel = np.array(vel, dtype=float)
 
-    def cohere(self, neighbors):
-        '''
-        Return the vector toward the center of mass of the local neighbors.
-        '''
-        cohere = np.zeros(2)
-        if neighbors:
-            for neighbor in neighbors:
-                cohere += self.model.space.get_heading(self.pos, neighbor.pos)
-            cohere /= len(neighbors)
-        return cohere
+    def forward_distance_to_car(self, car):
+        """Return forward distance (in x-direction) to a car."""
 
-    def separate(self, neighbors):
-        '''
-        Return a vector away from any neighbors closer than separation dist.
-        '''
-        me = self.pos
-        them = (n.pos for n in neighbors)
-        separation_vector = np.zeros(2)
-        for other in them:
-            if self.model.space.get_distance(me, other) < self.separation:
-                separation_vector -= self.model.space.get_heading(me, other)
-        return separation_vector
+        distance = car.pos[0] - self.pos[0]
+        if distance < 0:
+            distance = self.model.length + distance
+        return distance - self.model.car_size
 
-    def match_heading(self, neighbors):
-        '''
-        Return a vector of the neighbors' average heading.
-        '''
-        match_vector = np.zeros(2)
-        if neighbors:
-            for neighbor in neighbors:
-                match_vector += neighbor.velocity
-            match_vector /= len(neighbors)
-        return match_vector
+    def car_in_front(self):
+        """Return a tuple of the first car in front and the distance to."""
+
+        # get cars ahead within vision range of: max_speed + car_size + min_spacing
+        vision = self.model.max_speed + self.model.car_size + self.model.min_spacing
+        cars = self.model.space.get_neighbors(self.pos + np.array((vision/2, 0)), vision/2)
+        # create list of tuple (car, distance) for cars on the same lane
+        cars = [(x, self.forward_distance_to_car(x)) for x in cars if x != self and x.pos[1] == self.pos[1]]
+        # sort on (forward) distance
+        cars.sort(key=lambda x: x[1])
+        # return the closest car in front if there is any
+        return cars[0] if cars else None
 
     def step(self):
-        '''
-        Get the Boid's neighbors, compute the new vector, and move accordingly.
-        '''
+        """Apply Nagel-Schreckenberg rules"""
 
-        neighbors = self.model.space.get_neighbors(self.pos, self.vision,
-                                                   False)
-        self.velocity += (
-            self.cohere(neighbors) * self.cohere_factor +
-            self.separate(neighbors) * self.separate_factor +
-            self.match_heading(neighbors) * self.match_factor) / 2
-        self.velocity /= np.linalg.norm(self.velocity)
-        new_pos = self.pos + self.velocity * self.speed
-        self.model.space.move_agent(self, new_pos)
+        # 1. accelerate if not maximum speed
+        if self.vel[0] < self.model.max_speed:
+            self.vel[0] = min(self.vel[0] + self.model.car_acc, self.model.max_speed)
+
+        # 2. slow down if car in front
+        car = self.car_in_front()
+        if car:
+            distance = car[1]
+            if self.vel[0] > distance - self.model.min_spacing:
+                self.vel[0] = distance - self.model.min_spacing
+
+        # 3. random slow down
+        if self.random.random() < self.model.p_slowdown:
+            self.vel[0] -= self.model.car_acc
+
+        # clip negative velocities to zero
+        self.vel[0] = max(self.vel[0], 0)
+
+        # 4. move car to new position
+        pos = self.pos + self.vel
+        self.model.space.move_agent(self, pos)
