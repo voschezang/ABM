@@ -24,3 +24,22 @@ agents kiezen strategie: copy, aanvallend, etc
 - alt: hoeveel boten moet een agent in de gaten houden?
 
 
+
+
+# Setup
+
+Open terminal (or equivalent) and run:
+It is assumed that `pip3` is installed.
+
+```
+git clone https://github.com/voschezang/ABM
+cd AMB
+make deps
+```
+
+# Run
+
+Start server and run a simulation in your browser
+```
+make run
+```
