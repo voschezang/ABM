@@ -1,4 +1,4 @@
-# ABM
+# Agend-Based Model of cars
 ABM project course
 
 Papers zoeken
@@ -6,6 +6,18 @@ Papers zoeken
  - andere cars
 - self-organization
 - critical point (voor complex system)
+
+
+## Basic agent rules
+### Nagel-Schreckenberg rules
+- Accelerate if agent is not driving at maximum speed
+- Slow down if another car is in front of agent (within range)
+- Disable backwards movement
+
+### Extended rules
+- Overtake any car in front of agent (if possible)
+
+
 
 
 # snelweg - banen
