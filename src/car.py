@@ -38,7 +38,7 @@ class Car(Agent):
         cars = [(x, self.forward_distance_to_car(x)) for x in cars
                 if x != self and x.pos[1] == self.pos[1]]
         # sort on (forward) distance
-        return sorted(cars, key=lambda x: x[1], reverse=True)
+        return sorted(cars, key=lambda x: x[1])
 
     def step(self):
         """Apply Nagel-Schreckenberg rules
@@ -52,7 +52,7 @@ class Car(Agent):
         # 2. slow down if car in front
         cars = self.cars_in_front()
         if cars:
-            car, distance = cars.pop()
+            car, distance = cars[0]
             if self.vel[0] > distance - self.model.min_spacing:
                 self.vel[0] = distance - self.model.min_spacing
 
