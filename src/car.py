@@ -56,7 +56,7 @@ class Car(Agent):
         if distance_to_next_car > self.overtake_threshold():
             return False
 
-        radius = 10  # TODO limit search to the left/right lane (instead of radius)
+        radius = 1  # TODO limit search to the left/right lane (instead of radius)
         neighbors = self.model.space.get_neighbors(
             self.pos, radius, include_center=False)
         if neighbors:
