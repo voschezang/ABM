@@ -8,8 +8,15 @@ from .agent import Car
 
 
 class MyModel(Model):
-    def __init__(self, length=100, lanes=1, n_cars=10,
-                 max_speed=10, car_size=5, min_spacing=1, car_acc=1, p_slowdown=0.2):
+    def __init__(self,
+                 length=100,
+                 lanes=1,
+                 n_cars=10,
+                 max_speed=10,
+                 car_size=5,
+                 min_spacing=1,
+                 car_acc=1,
+                 p_slowdown=0.2):
         """Initialise the traffic model.
 
         Parameters
@@ -35,9 +42,9 @@ class MyModel(Model):
         self.car_acc = car_acc
         self.p_slowdown = p_slowdown
 
-        self.space = ContinuousSpace(length, lanes+1, torus=True)
+        self.space = ContinuousSpace(length, lanes + 1, torus=True)
         self.schedule = RandomActivation(self)
-        
+
         self.make_agents()
 
     def make_agents(self):
