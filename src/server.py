@@ -6,11 +6,11 @@ from .SimpleContinuousModule import SimpleCanvas
 
 # parameters
 length = 100
-car_width = 5
-car_height = 1.8
+car_length = 5
+car_width = 1.8
 lane_width = 3.5  # for visualisation
 
-default_n_lanes = 3
+default_n_lanes = 4
 
 model_params = {
     "length":
@@ -39,8 +39,8 @@ model_params = {
 def car_portrayal(agent):
     return {
         "Shape": "rect",
-        "w": car_width / length,  # relative to space
-        "h": car_height / (agent.model.n_lanes * lane_width),  # relative
+        "w": car_length / length,  # relative to space
+        "h": car_width / (agent.model.n_lanes * lane_width),  # relative
         "Filled": "true",
         "Color": "blue"
     }
