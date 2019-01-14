@@ -18,6 +18,11 @@ Papers zoeken
 - Overtake any car in front of agent (if possible)
 
 
+## Scenario's
+This research focusses on the emergence of traffic jams in an agent-based system
+- What is the minimal perturbation to cause a traffic jam? (e.g. a braking car)
+- What happens to this threshold if more lanes are added?
+- How does the minimum speed affect this behaviour?
 
 
 
