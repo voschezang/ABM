@@ -5,28 +5,31 @@ from .model import MyModel
 from .SimpleContinuousModule import SimpleCanvas
 
 # parameters
-length = 1000
-car_size = (5, 1.8)
-lane_width = 3.5  # only for visualisation
+length = 100
+car_width = 5
+car_height = 1.8
+lane_width = 3.5  # for visualisation
+
+default_n_lanes = 3
 
 model_params = {
     "length":
     length,
-    "lanes":
-    UserSettableParameter(UserSettableParameter.SLIDER, "Number of Lanes", 1,
-                          1, 10, 1),
+    "n_lanes":
+    UserSettableParameter(UserSettableParameter.SLIDER, "Number of Lanes",
+                          default_n_lanes, 1, 10, 1),
     "n_cars":
     UserSettableParameter(UserSettableParameter.SLIDER, "Number of Cars", 20,
                           1, 100, 1),
     "max_speed":
     33,
-    "car_size":
-    car_size[0],
+    "car_length":
+    car_width,
     "min_spacing":
     UserSettableParameter(UserSettableParameter.SLIDER,
                           "Minimum spacing between cars", 1, 0, 5, 0.5),
     "car_acc":
-    33 / 10,
+    33 / 100,
     "p_slowdown":
     UserSettableParameter(UserSettableParameter.SLIDER,
                           "Probability of slowing down", 0.2, 0, 1, 0.1)
@@ -36,16 +39,16 @@ model_params = {
 def car_portrayal(agent):
     return {
         "Shape": "rect",
-        "w":
-        car_size[0] / length,  # rectangle width as fraction of space width
-        "h": car_size[1] /
-        (agent.model.lanes * lane_width),  # rectangle height fraction
+        "w": car_width / length,  # relative to space
+        "h": car_height / (agent.model.n_lanes * lane_width),  # relative
         "Filled": "true",
         "Color": "blue"
     }
 
 
-car_canvas = SimpleCanvas(car_portrayal, 500, 50)
+canvas_height = (
+    default_n_lanes + 1) * lane_width * 2  # TODO update this value after init
+car_canvas = SimpleCanvas(car_portrayal, 500, canvas_height)
 
 server = ModularServer(MyModel, [car_canvas], "Traffic simulation",
                        model_params)

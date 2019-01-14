@@ -25,32 +25,34 @@ class Car(Agent):
         distance = car.pos[0] - self.pos[0]
         if distance < 0:
             distance = self.model.length + distance
-        return distance - self.model.car_size
+        return distance - self.model.car_length
 
-    def car_in_front(self):
-        """Return a tuple of the first car in front and the distance to."""
+    def cars_in_front(self):
+        """Return a list of tuples of the first car in front and the distance to that car."""
 
         # get cars ahead within vision range of: max_speed + car_size + min_spacing
-        vision = self.model.max_speed + self.model.car_size + self.model.min_spacing
-        cars = self.model.space.get_neighbors(self.pos + np.array((vision/2, 0)), vision/2)
+        vision = self.model.max_speed + self.model.car_length + self.model.min_spacing
+        cars = self.model.space.get_neighbors(self.pos + np.array(
+            (vision / 2, 0)), vision / 2)
         # create list of tuple (car, distance) for cars on the same lane
-        cars = [(x, self.forward_distance_to_car(x)) for x in cars if x != self and x.pos[1] == self.pos[1]]
+        cars = [(x, self.forward_distance_to_car(x)) for x in cars
+                if x != self and x.pos[1] == self.pos[1]]
         # sort on (forward) distance
-        cars.sort(key=lambda x: x[1])
-        # return the closest car in front if there is any
-        return cars[0] if cars else None
+        return sorted(cars, key=lambda x: x[1], reverse=True)
 
     def step(self):
-        """Apply Nagel-Schreckenberg rules"""
+        """Apply Nagel-Schreckenberg rules
+        """
 
         # 1. accelerate if not maximum speed
         if self.vel[0] < self.model.max_speed:
-            self.vel[0] = min(self.vel[0] + self.model.car_acc, self.model.max_speed)
+            self.vel[0] = min(self.vel[0] + self.model.car_acc,
+                              self.model.max_speed)
 
         # 2. slow down if car in front
-        car = self.car_in_front()
-        if car:
-            distance = car[1]
+        cars = self.cars_in_front()
+        if cars:
+            car, distance = cars.pop()
             if self.vel[0] > distance - self.model.min_spacing:
                 self.vel[0] = distance - self.model.min_spacing
 
