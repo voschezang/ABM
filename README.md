@@ -17,15 +17,15 @@ Papers zoeken
 ### Extended rules
 - Overtake any car in front of agent (if possible)
 
-direct approach
+### direct approach
 - add state : `{driving, switching lane}`
 - add choice set : `{switch lane, stay on lane}`
 
-indirect approach
-- add rules such as
- -- `if on lane and car_in_fron: switch lane`
- -- `if in between lanes and car_in_front_and_right: go left`
- -- `if in between lanes and car_in_front_and_left: go right`
+### indirect approach
+add rules such as
+ - `if on lane and car_in_fron: switch lane`
+ - `if in between lanes and car_in_front_and_right: go left`
+ - `if in between lanes and car_in_front_and_left: go right`
 
 
 
