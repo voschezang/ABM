@@ -21,6 +21,9 @@ class Road(ContinuousSpace):
     def lane(self, car):
         return int(car.pos[1] // self.lane_width)
 
+    def lane_at(self, pos):
+        return int(pos[1] // self.lane_width)
+
     def distance_from_center_of_lane(self, pos):
         return pos[1] % self.lane_width - self.lane_width / 2
 
@@ -56,8 +59,7 @@ class Road(ContinuousSpace):
         for i in idxs:
             x = self._index_to_agent[i]
             for j in range(3):
-                offset = j - 1
-                if self.lane(x) == lane + offset:
+                if x.lane == lane + j - 1:
                     if cars[j] == None or dists[i, 0] < cars[j][1]:
                         cars[j] = (x, dists[i, 0])
 
@@ -66,22 +68,21 @@ class Road(ContinuousSpace):
     def change_lane(self, car, lane):
         car.pos[1] = (lane + 0.5) * self.lane_width
 
-    def can_change_lane(self, car, direction, cars_front, cars_back):
+    def can_change_lane(self, car, target_lane, cars_front, cars_back):
         """Returns whether there is room fo a car to change lane in direction (L/R)"""
 
-        lane = self.lane(car)
-        target_lane = lane + direction
+        # if target lane exists
+        if target_lane < 0 or target_lane >= self.n_lanes:
+            return False
 
         # index for getting cars in target_lane from cars_front/cars_back
-        i = direction + 1
+        i = (target_lane - car.lane) + 1
 
-        # if target lane exists
-        if target_lane >= 0 and target_lane < self.n_lanes:
-            # check if there is space in front in the target lane
-            if not cars_front[i] or car.vel[0] * self.model.time_step < cars_front[i][1] - self.model.car_length - self.model.min_spacing * car.vel[0]: # TODO check rule for looking forward
-                # check if there is space backwards in target lane
-                # TODO: incorporate car.minimal_overtake_distance
-                if not cars_back[i] or cars_back[i][0].vel[0] * self.model.time_step < cars_back[i][1] - self.model.car_length - self.model.min_spacing * cars_back[i][0].vel[0]: # TODO change rule for checking backwards
-                    return True
+        # check if there is space in front in the target lane
+        if not cars_front[i] or car.vel[0] * self.model.time_step < cars_front[i][1] - self.model.car_length - self.model.min_spacing * car.vel[0]: # TODO check rule for looking forward
+            # check if there is space backwards in target lane
+            # TODO: incorporate car.minimal_overtake_distance
+            if not cars_back[i] or cars_back[i][0].vel[0] * self.model.time_step < cars_back[i][1] - self.model.car_length - self.model.min_spacing * cars_back[i][0].vel[0]: # TODO change rule for checking backwards
+                return True
         
         return False

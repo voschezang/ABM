@@ -2,14 +2,24 @@ import numpy as np
 
 from mesa import Model
 from mesa.space import ContinuousSpace
-from mesa.time import RandomActivation
+from mesa.time import StagedActivation, RandomActivation
+from mesa.datacollection import DataCollector
 
 import src.util as util
 from .car import Car
 from .road import Road
 
+### datacollection functions
+
+def vel0(model):
+    """Velocity of car 0"""
+    return model.schedule.agents[0].vel[0]
+
+###
 
 class MyModel(Model):
+    max_lanes = 10
+
     def __init__(self,
                  length,
                  lane_width,
@@ -29,7 +39,7 @@ class MyModel(Model):
         lane_width -- width of a lane.
         n_lanes -- number of lanes.
         n_cars -- number of cars.
-        max_speed -- maximum speed cars can (and want to) travel at.
+        max_speed -- maximum speed cars can (and want to) travel at in km/h (is converted to m/s).
         car_length -- length of each car.
         min_spacing -- the minimum distance cars keep from each other (bumper to bumper) in seconds.
         car_acc -- acceleration of the cars.
@@ -41,20 +51,31 @@ class MyModel(Model):
         np.random.seed()
 
         self.n_cars = n_cars
-        self.max_speed = max_speed
+        self.max_speed = max_speed / 3.6
         self.car_length = car_length
         self.min_spacing = min_spacing
         self.car_acc = car_acc
         self.p_slowdown = p_slowdown
         self.time_step = time_step
+        self.lane_change_time = 2
 
         self.space = Road(self, length, n_lanes, lane_width, torus=True)
-        self.schedule = RandomActivation(self)
 
+        # uncomment one of the two lines below to select the timing schedule (random, or staged)
+        self.schedule = RandomActivation(self)
+        #self.schedule = StagedActivation(self, ["update_velocity", "move"], shuffle=False, shuffle_between_stages=False)
+        
         self.make_agents()
 
+        # create data collectors
+        self.data_collector = DataCollector(model_reporters={
+            "Velocity": vel0})
+
+
     def step(self):
+        self.data_collector.collect(self)
         self.schedule.step()
+        
 
     def make_agents(self):
         """Create self.n_cars number of agents and add them to the model (space, schedule)"""
@@ -80,32 +101,5 @@ class MyModel(Model):
 
     
 
-    def get_neighbors_per_lane(self, car):
-        current_lane = self.lane(car.pos)
-        cars_all = self.get_neighbours(car)
-        cars_right = []
-        cars_current = []
-        cars_left = []
-        for other_car in cars_all:
-            other_lane = lane(other_car.pos)
-            if other_lane == current_lane - 1:
-                cars_right.append(other_car)
-            elif other_lane == current_lane:
-                cars_current.append(other_car)
-            elif other_lane == current_lane + 1:
-                cars_left.append(other_car)
-            else:  # a non-neighboring lane
-                pass
-        return (cars_right, cars_current, cars_left)
-
-    def get_neighbors(self, car):
-        # max distance worst case = a static (non-moving) object (with 0 velocity)
-        max_forward_distance_seconds = 2
-        speed = util.kmh_to_ms(car.vel[0])  # neglect y axis
-        max_forward_distance_meters = max_radius_seconds / car.vel[0]
-        max_radius_meters = np.linalg.norm((max_forward_distance_meters,
-                                            1.5 * self.lane_width))
-        return self.space.get_neighbors(
-            car.pos, max_radius_meters, include_center=False)
 
     
