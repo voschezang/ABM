@@ -43,6 +43,7 @@ class Car(Agent):
         lane = self.model.space.lane(self)
         cars = self.model.space.cars_in_range(self)
         cars_back = self.model.space.cars_in_range(self, forward=False)
+        changed_lane = False
 
         # if car in front
         if cars[1] != None:
@@ -54,12 +55,13 @@ class Car(Agent):
             if self.vel[0] * self.model.time_step > d - spacing:
                 if self.model.space.can_change_lane(self, Direction.L, cars, cars_back):
                     self.model.space.change_lane(self, lane + Direction.L)
+                    changed_lane = True
                 else:
                     # brake
                     self.vel[0] = (d - spacing) / self.model.time_step
 
         # check if can move to right lane
-        if self.model.space.can_change_lane(self, Direction.R, cars, cars_back) and self.random.random() < self.bias_right_lane:
+        if not changed_lane and self.model.space.can_change_lane(self, Direction.R, cars, cars_back) and self.random.random() < self.bias_right_lane:
             self.model.space.change_lane(self, lane + Direction.R)
 
 
