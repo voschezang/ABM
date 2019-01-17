@@ -45,7 +45,7 @@ def vel(): # intended velocity of agent
     if not right_of_center_of_lane:
       attempt_to_switch_to_lane([left,right])
     else:
-      attempt_to_switch_to_lane([left,right])
+      attempt_to_switch_to_lane([right,left])
 
   else: # no car in front
     if chance to go to the right lane > random(): # (probability based on personal preference)
