@@ -49,20 +49,26 @@ def vel(): # intended velocity of agent
 
   else: # no car in front
     if chance to go to the right lane > random(): # (probability based on personal preference)
-       attempt_to_switch_to_lane([right])
+       (success, vel) = attempt_to_switch_to_lane([right])
+       if not success:
+          center_on_current_lane()
     else:
       center_on_current_lane()
  
   return vel_next()
 
 
-def switch_lane(direction=[left,right]):
+def attempt_to_switch_to_lane(direction=[left,right]):
+ # return tuple (success: bool, vel: [x:int,y:int])
  for direction in directions:
   if can_go_to_lane(direction):
-     steer(direction)
-     return
-  center_on_current_lane()
+     vel = steer(direction)
+     return (True, vel)
+  return (False,center_on_current_lane())
 
+def center_on_current_lane()
+ ...
+ return vel
 ```
 
 
