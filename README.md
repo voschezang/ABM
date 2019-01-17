@@ -32,43 +32,57 @@ Code
 overtake reasoning
 ```python
 def step():
- vel_next = vel()
- pos = self.pos + vel
+ update_vel()
+ move()
 
-def vel(): # intended velocity of agent
-  vel_next = vel
+def update_vel():
+ self.vel_next = compute_next_vel()
+
+def move():
+ update_current_vel()
+ update_pos()
+
+def update_pos():
+ self.pos += self.vel * dt
+ ... # update model.space
+
+def update_current_vel():
+  self.vel = self.nex_vel
+  
+def update_next_vel():
+  # returns the intended velocity of agent
   # 1
-  accelerate until max speed etc...
- 
+  next_vel = accelerate(self.vel) # accelerate if not at max speed
+
   # 2 prevent collisions
   if car_in_front:
-    if not right_of_center_of_lane:
-      attempt_to_switch_to_lane([left,right])
+    if not right_of_center_of_lane: # i.e. in the middle or left
+         _, vel_next = steer_to_lane(vel_next, [left,right])
     else:
-      attempt_to_switch_to_lane([right,left])
+      _, vel_next = steer_to_lane(vel_next, [right, left])
 
   else: # no car in front
     if chance to go to the right lane > random(): # (probability based on personal preference)
-       (success, vel) = attempt_to_switch_to_lane([right])
+       success, vel_next = steer_to_lane(vel_next, [right, left])
        if not success:
-          center_on_current_lane()
+          vel_next = center_on_current_lane(vel_next)
     else:
-      center_on_current_lane()
- 
-  return vel_next()
-
+      vel_next = center_on_current_lane(vel_next)
+      
+  self.vel_next = vel_next
 
 def attempt_to_switch_to_lane(direction=[left,right]):
- # return tuple (success: bool, vel: [x:int,y:int])
+ # returns a tuple (success: bool, vel: (int,int) )
  for direction in directions:
   if can_go_to_lane(direction):
-     vel = steer(direction)
+     self.vel_next = steer(direction)
      return (True, vel)
-  return (False,center_on_current_lane())
+  return (False, center_on_current_lane(vel_next))
 
-def center_on_current_lane()
+def center_on_current_lane(vel_next)
+ # returns the required velocity to center the can to on the current lane
  ...
- return vel
+
 ```
 
 
