@@ -110,7 +110,19 @@ class Road(ContinuousSpace):
                 return (True, vel)
         return (False, center_on_current_lane(vel_next))
 
-    def center_on_current_lane(vel_next):
-        # TODO
-        # returns the required velocity to center the can to on the current lane
-        pass
+    def relative_distance_from_to(self, a, b, dimension=0):
+        # relative distance from Agent a to Agent b (in 1 dimension)
+        distance_abs = a.pos[dimension] - b.pos[dimension]
+        return util.distance_in_seconds(distance_abs, a.vel[dimension],
+                                        b.vel[dimension])
+
+    def is_in_front_of(self, a, b):
+        # evaluate whether Agent a if in front of Agent b
+        chosen_car = None
+        distance = self.model.min_spacing
+        for car in cars:
+            car_distance = self.relative_distance_to(car)
+            if car_distance < self.model.min_spacing:
+                if car_distance < distance:
+                    chosen_car = car
+        return (chosen_car, distance)

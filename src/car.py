@@ -70,16 +70,16 @@ class Car(Agent):
                     self, [Direction.R, Direction.L])
 
             if not success:
-                # TODO (optional) mv functions outside of class to avoid confusion of behaviour
-                # e.g. next_vel = brake(self, next_vel)
                 self.brake(distance)
+                # (optional)
+                # vel_next = self.center_on_current_lane()
 
         else:  # no car in front
             if self.bias_right_lane > self.random.random():
-                _, vel_next = self.model.space.can_steer_to_lane(
+                _, self.vel_next = self.model.space.can_steer_to_lane(
                     self, [Direction.R])
             else:
-                vel_next = center_on_current_lane(vel_next)
+                vel_next = self.center_on_current_lane()
 
         ### 3. randomly slow down
         if self.random.random() < self.model.p_slowdown:
@@ -106,34 +106,13 @@ class Car(Agent):
             self.vel_next[0] = distance / (
                 self.model.time_step + self.model.min_spacing)
 
-    #
-    #
-    #
-    #
-    #
-    #
-    #
-    #
-
-    def overtake(self, cars_dict):
-        """
-        cars_dict -- (ordered)dict of type {direction: [Car]}
-        """
-        for lane, cars in cars_dict:
-            if self.lane_is_free(cars):
-                self.move_to_lane(direction)
-                return
-
-        self.slow_down()
-        self.center_on_current_lane()
-
-    def move_to_right_lane(self):
-        pass
-
     def center_on_current_lane(self):
         pass
 
     # predicates
+
+    def is_left_of_center(self):
+        return self.pos[0] % self.model.lane_width > 0.5
 
     def car_in_front(self, cars):
         chosen_car = None
@@ -144,15 +123,3 @@ class Car(Agent):
                 if car_distance < distance:
                     chosen_car = car
         return (chosen_car, distance)
-
-    def is_left_of_center(self):
-        return self.pos[0] % self.model.lane_width > 0.5
-
-    def relative_distance_to(self, car, dimension=0):
-        # in seconds
-        distance_abs = self.pos[0] - car.pos[0]
-        return util.distance_in_seconds(distance_abs, self.vel[0], car.vel[0])
-
-    def distance_in_seconds(self, car):
-        distance_abs = self.pos[0] - car.pos[0]
-        return util.distance_in_seconds(distance_abs, self.vel[0], car.vel[0])
