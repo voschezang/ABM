@@ -65,7 +65,7 @@ def update_next_vel():
 
   else: # no car in front
     if chance to go to the right lane > random(): # (probability based on personal preference)
-       success, vel_next = steer_to_lane(vel_next, [right, left])
+       success, vel_next = steer_to_lane(vel_next, [right])
        if not success:
           vel_next = center_on_current_lane(vel_next)
     else:
