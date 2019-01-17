@@ -56,8 +56,11 @@ class MyModel(Model):
         self.space = Road(self, length, n_lanes, lane_width, torus=True)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
-        self.schedule = RandomActivation(self)
-        #self.schedule = StagedActivation(self, ["update_velocity", "move"], shuffle=False, shuffle_between_stages=False)
+        # self.schedule = RandomActivation(self)
+        self.schedule = StagedActivation(
+            self, ["update_vel_next", "move"],
+            shuffle=False,
+            shuffle_between_stages=False)
 
         self.make_agents()
 

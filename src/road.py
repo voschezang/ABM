@@ -37,7 +37,11 @@ class Road(ContinuousSpace):
         vision = self.model.max_speed + self.model.car_length + self.model.min_spacing * self.model.max_speed
 
         # get the distances to each car
-        dists = self._agent_points - car.pos if forward else car.pos - self._agent_points
+        if forward:
+            dists = self._agent_points - car.pos
+        else:
+            dists = car.pos - self._agent_points
+
         if self.torus:
             for dist in dists:
                 if dist[0] < 0:
@@ -87,3 +91,26 @@ class Road(ContinuousSpace):
                 return True
 
         return False
+
+    def car_in_front(self, cars):
+        return not cars_front[1] == None  # TODO index 1?
+
+    def steer_to_lane(self, car, vel, direction=[Direction.R]):
+        # TODO
+        # compute the velocity required to steer a car to another lane
+        # returns a tuple (success: bool, vel: (int,int) )
+        if self.out_of_bounds(car.current_lane() + direction):
+            return False, car.vel_next
+
+        cars_front = self.model.space.cars_in_range(self)
+        cars_back = self.model.space.cars_in_range(self, forward=False)
+        for direction in directions:
+            if self.can_go_to_lane(direction):
+                self.vel_next = steer(direction)
+                return (True, vel)
+        return (False, center_on_current_lane(vel_next))
+
+    def center_on_current_lane(vel_next):
+        # TODO
+        # returns the required velocity to center the can to on the current lane
+        pass

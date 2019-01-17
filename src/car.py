@@ -34,95 +34,52 @@ class Car(Agent):
         self.target_lane = None
 
     def step(self):
-        self.update_velocity()
+        self.update_vel_next()
         self.move()
 
-        return
+    def move(self):
+        self.vel = self.vel_new
+        self.pos += self.vel * self.model.time_step
+
+        self.model.space.move_agent(self, self.pos)
+
+    def update_vel_next(self):
+        # update the property `vel_next`: the intended velocity of agent based of the current state
+        # TODO force np array type
         ### 1. accelerate if not maximum speed
-        if self.vel[0] < self.max_speed:
-            self.vel[0] = min(
-                self.vel[0] + self.model.car_acc * self.model.time_step,
-                self.max_speed)
+        self.vel_next = accelerate_vel(
+            self.vel.copy())  # accelerate if not at max speed
 
         ### 2. prevent collision with other cars
+        # TODO combine searching (search forward for cars in current lane and backward for cars in adjacent lanes)
+        # (optional) stop searching adjacent lanes when a blocking car is found
+        #   i.e. a reason that makes overtaking impossible
+        # We may have to simplify the interface, i.e. store cars per lane and simply iterate all cars in that lane, instead of searching in a radius
         cars_front = self.model.space.cars_in_range(self)
-        cars_back = self.model.space.cars_in_range(self, forward=False)
-
-        if self.unique_id == 1:
-            print("Car {}: {} m/s".format(self.unique_id, self.vel[0]))
-            print(cars_front)
-            print(cars_back)
 
         # if car in front
-        if cars_front[1] != None:
-            car, d = cars_front[1]
-            d -= self.model.car_length
-            spacing = self.model.min_spacing * car.vel[0]
+        if self.model.space.car_in_front(cars_front):
+            car, d_head_to_head = cars_front[1]  # index 1?
+            d = d_head_to_head - self.model.car_length
 
-            # if needs to brake in order to keep minimum spacing
-            if self.vel[0] * self.model.time_step > d - spacing:
-                if self.model.space.can_change_lane(
-                        self, self.lane + Direction.L, cars_front, cars_back):
-                    self.target_lane = self.lane + Direction.L
-                    self.vel[
-                        1] = Direction.L * self.model.space.lane_width / self.model.lane_change_time
-                else:
-                    # brake
-                    self.vel[0] = (d - spacing) / self.model.time_step
+            if not self.right_of_center_of_lane():  # i.e. in the middle or left
+                success, self.vel_next = self.model.space.steer_to_lane(
+                    self, [Direction.L, Direction.R])
+            else:
+                success, self.vel_next = self.model.space.steer_to_lane(
+                    self, [Direction.R, Direction.L])
 
-        # check if can move to right lane
-        if self.target_lane == None and self.model.space.can_change_lane(
-                self, self.lane + Direction.R, cars_front,
-                cars_back) and self.random.random() < self.bias_right_lane:
-            self.target_lane = self.lane + Direction.R
-            self.vel[
-                1] = Direction.R * self.model.space.lane_width / self.model.lane_change_time
+            if not success:
+                # TODO (optional) mv functions outside of class to avoid confusion of behaviour
+                # e.g. next_vel = brake(self, next_vel)
+                self.brake(distance)
 
-        ### 3. randomly slow down
-        if self.random.random() < self.model.p_slowdown:
-            self.vel[0] -= self.model.car_acc * self.model.time_step
-
-        # clip negative velocities to zero
-        self.vel[0] = max(self.vel[0], 0)
-
-        ### 4. move car to new position
-        pos = self.pos + self.vel * self.model.time_step
-        # if changing lane check if lane change finished
-        if self.target_lane != None:
-            self.lane = self.model.space.lane_at(pos)
-            #print(self.lane, self.model.space.distance_from_center_of_lane(pos), self.model.space.lane_width / self.model.lane_change_time * self.model.time_step)
-            if self.lane == self.target_lane and np.abs(
-                    self.model.space.distance_from_center_of_lane(pos)
-            ) < self.model.space.lane_width / self.model.lane_change_time * self.model.time_step:
-                self.target_lane = None
-                self.vel[1] = 0
-                pos[1] = (self.lane + 0.5) * self.model.space.lane_width
-                #print("{} lane_change finish".format(self.unique_id))
-        self.model.space.move_agent(self, pos)
-
-    def update_velocity(self):
-        vel_new = self.vel
-
-        ### 1. accelerate if not maximum speed
-        if vel_new[0] < self.max_speed:
-            vel_new[0] = min(
-                vel_new[0] + self.model.car_acc * self.model.time_step,
-                self.max_speed)
-
-        ### 2. prevent collision with other cars
-        cars_front = self.model.space.cars_in_range(self)
-        cars_back = self.model.space.cars_in_range(self, forward=False)
-
-        # if car in front
-        if cars_front[1] != None:
-            car, d = cars_front[1]
-            d -= self.model.car_length  # absolute distance (bumper-to-bumper)
-
-            # if needs to brake in order to keep minimum spacing
-            if d < vel_new[0] * (
-                    self.model.time_step + self.model.min_spacing):
-                vel_new[0] = d / (
-                    self.model.time_step + self.model.min_spacing)
+        else:  # no car in front
+            if self.bias_right_lane > self.random.random():
+                _, vel_next = self.model.space.can_steer_to_lane(
+                    self, [Direction.R])
+            else:
+                vel_next = center_on_current_lane(vel_next)
 
         ### 3. randomly slow down
         if self.random.random() < self.model.p_slowdown:
@@ -131,13 +88,32 @@ class Car(Agent):
         # clip negative velocities to zero
         vel_new[0] = max(vel_new[0], 0)
 
-        self.vel_new = vel_new
+        # self.vel_next = vel_next
+        return vel_next
 
-    def move(self):
-        self.vel = self.vel_new
-        self.pos += self.vel * self.model.time_step
+    def accelerate_vel(self, vel):
+        # returns accelerated vel, upper limited by the maximum speed
+        if vel[0] < self.max_speed:
+            vel[0] = min(
+                vel_new[0] + self.model.car_acc * self.model.time_step,
+                self.max_speed)
+        return vel
 
-        self.model.space.move_agent(self, self.pos)
+    def brake(self, distance):
+        # if needs to brake in order to keep minimum spacing
+        if distance < self.vel_next[0] * (
+                self.model.time_step + self.model.min_spacing):
+            self.vel_next[0] = distance / (
+                self.model.time_step + self.model.min_spacing)
+
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #
 
     def overtake(self, cars_dict):
         """
