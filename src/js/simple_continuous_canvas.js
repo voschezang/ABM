@@ -10,6 +10,8 @@ var ContinuousVisualization = function(width, height, context) {
 				this.drawRectange(p.x, p.y, p.w, p.h, p.Color, p.Filled);
 			if (p.Shape == "circle")
 				this.drawCircle(p.x, p.y, p.r, p.Color, p.Filled);
+			if (p.text != undefined)
+				this.drawText(p.x, p.y, p.text, p.textColor);
 		};
 
 	};
@@ -49,6 +51,12 @@ var ContinuousVisualization = function(width, height, context) {
 		else
 			context.strokeRect(x0, y0, dx, dy);
 	};
+
+	this.drawText = function(x, y, text, textColor) {
+		context.font = "12px Arial";
+		context.fillStyle = textColor;
+		context.fillText(text, x * width, y * height);
+	}
 
 	this.resetCanvas = function() {
 		context.clearRect(0, 0, width, height);
