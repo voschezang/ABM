@@ -17,14 +17,14 @@ model_params = {
     "lane_width":
     lane_width,
     "n_lanes":
-    UserSettableParameter(UserSettableParameter.SLIDER, "Number of Lanes",
-                          2, 1, MyModel.max_lanes, 1),
+    UserSettableParameter(UserSettableParameter.SLIDER, "Number of Lanes", 2,
+                          1, MyModel.max_lanes, 1),
     "n_cars":
-    UserSettableParameter(UserSettableParameter.SLIDER, "Number of Cars", 2,
-                          1, 100, 1),
+    UserSettableParameter(UserSettableParameter.SLIDER, "Number of Cars", 2, 1,
+                          100, 1),
     "max_speed":
-    UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Maximum speed (km/h)", 120, 1, 150, 10),
+    UserSettableParameter(UserSettableParameter.SLIDER, "Maximum speed (km/h)",
+                          120, 1, 150, 10),
     "car_length":
     car_length,
     "min_spacing":
@@ -52,12 +52,14 @@ def car_portrayal(agent):
     }
 
 
-
 car_canvas = SimpleCanvas(car_portrayal, 500, 200)
 
-chart = ChartModule([{"Label": "Velocity",
-                      "Color": "red"}],
-                    data_collector_name="data_collector")
+chart = ChartModule(
+    [{
+        "Label": "Velocity",
+        "Color": "red"
+    }],
+    data_collector_name="data_collector")
 
 server = ModularServer(MyModel, [car_canvas, chart], "Traffic simulation",
                        model_params)

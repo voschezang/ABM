@@ -11,26 +11,20 @@ from .road import Road
 
 ### datacollection functions
 
+
 def vel0(model):
     """Velocity of car 0"""
     return model.schedule.agents[0].vel[0]
 
+
 ###
+
 
 class MyModel(Model):
     max_lanes = 10
 
-    def __init__(self,
-                 length,
-                 lane_width,
-                 n_lanes,
-                 n_cars,
-                 max_speed,
-                 car_length,
-                 min_spacing,
-                 car_acc,
-                 p_slowdown,
-                 time_step):
+    def __init__(self, length, lane_width, n_lanes, n_cars, max_speed,
+                 car_length, min_spacing, car_acc, p_slowdown, time_step):
         """Initialise the traffic model.
 
         Parameters
@@ -64,25 +58,23 @@ class MyModel(Model):
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
         self.schedule = RandomActivation(self)
         #self.schedule = StagedActivation(self, ["update_velocity", "move"], shuffle=False, shuffle_between_stages=False)
-        
+
         self.make_agents()
 
         # create data collectors
-        self.data_collector = DataCollector(model_reporters={
-            "Velocity": vel0})
-
+        self.data_collector = DataCollector(model_reporters={"Velocity": vel0})
 
     def step(self):
         self.data_collector.collect(self)
         self.schedule.step()
-        
 
     def make_agents(self):
         """Create self.n_cars number of agents and add them to the model (space, schedule)"""
 
         for i in range(self.n_cars):
             x = self.random.random() * self.space.length
-            y = (self.random.randint(0, self.space.n_lanes - 1) + 0.5) * self.space.lane_width
+            y = (self.random.randint(0, self.space.n_lanes - 1) + 0.5
+                 ) * self.space.lane_width
             pos = (x, y)
             vel = (self.max_speed, 0)
             max_speed = np.random.normal(self.max_speed, 0)
@@ -94,12 +86,3 @@ class MyModel(Model):
 
             self.space.place_agent(car, car.pos)
             self.schedule.add(car)
-
-
-
-
-
-    
-
-
-    
