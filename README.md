@@ -57,9 +57,11 @@ def update_next_vel():
   # 2 prevent collisions
   if car_in_front:
     if not right_of_center_of_lane: # i.e. in the middle or left
-         _, vel_next = steer_to_lane(vel_next, [left,right])
+      success, vel_next = steer_to_lane(vel_next, [left,right])
     else:
-      _, vel_next = steer_to_lane(vel_next, [right, left])
+      success, vel_next = steer_to_lane(vel_next, [right, left])
+    if not success:
+      next_vel = brake(next_vel)
 
   else: # no car in front
     if chance to go to the right lane > random(): # (probability based on personal preference)
