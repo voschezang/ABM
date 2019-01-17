@@ -65,15 +65,13 @@ def update_next_vel():
 
   else: # no car in front
     if chance to go to the right lane > random(): # (probability based on personal preference)
-       success, vel_next = steer_to_lane(vel_next, [right])
-       if not success:
-          vel_next = center_on_current_lane(vel_next)
+       _, vel_next = steer_to_lane(vel_next, [right])
     else:
       vel_next = center_on_current_lane(vel_next)
       
   self.vel_next = vel_next
 
-def attempt_to_switch_to_lane(direction=[left,right]):
+def steer_to_lane(direction=[left,right]):
  # returns a tuple (success: bool, vel: (int,int) )
  for direction in directions:
   if can_go_to_lane(direction):
