@@ -9,7 +9,8 @@ from .road import Direction
 
 
 class Car(Agent):
-    def __init__(self, unique_id, model, pos, vel, max_speed, bias_right_lane, minimal_overtake_distance):
+    def __init__(self, unique_id, model, pos, vel, max_speed, bias_right_lane,
+                 minimal_overtake_distance):
         """Create an agent that represents a car
 
         Parameters
@@ -31,8 +32,6 @@ class Car(Agent):
         self.minimal_overtake_distance = minimal_overtake_distance
         self.lane = self.model.space.lane(self)
         self.target_lane = None
-        
-
 
     def step(self):
         self.update_velocity()
@@ -41,8 +40,9 @@ class Car(Agent):
         return
         ### 1. accelerate if not maximum speed
         if self.vel[0] < self.max_speed:
-            self.vel[0] = min(self.vel[0] + self.model.car_acc * self.model.time_step, self.max_speed)
-
+            self.vel[0] = min(
+                self.vel[0] + self.model.car_acc * self.model.time_step,
+                self.max_speed)
 
         ### 2. prevent collision with other cars
         cars_front = self.model.space.cars_in_range(self)
@@ -61,18 +61,22 @@ class Car(Agent):
 
             # if needs to brake in order to keep minimum spacing
             if self.vel[0] * self.model.time_step > d - spacing:
-                if self.model.space.can_change_lane(self, self.lane + Direction.L, cars_front, cars_back):
+                if self.model.space.can_change_lane(
+                        self, self.lane + Direction.L, cars_front, cars_back):
                     self.target_lane = self.lane + Direction.L
-                    self.vel[1] = Direction.L * self.model.space.lane_width / self.model.lane_change_time
+                    self.vel[
+                        1] = Direction.L * self.model.space.lane_width / self.model.lane_change_time
                 else:
                     # brake
                     self.vel[0] = (d - spacing) / self.model.time_step
 
         # check if can move to right lane
-        if self.target_lane == None and self.model.space.can_change_lane(self, self.lane + Direction.R, cars_front, cars_back) and self.random.random() < self.bias_right_lane:
+        if self.target_lane == None and self.model.space.can_change_lane(
+                self, self.lane + Direction.R, cars_front,
+                cars_back) and self.random.random() < self.bias_right_lane:
             self.target_lane = self.lane + Direction.R
-            self.vel[1] = Direction.R * self.model.space.lane_width / self.model.lane_change_time
-
+            self.vel[
+                1] = Direction.R * self.model.space.lane_width / self.model.lane_change_time
 
         ### 3. randomly slow down
         if self.random.random() < self.model.p_slowdown:
@@ -81,40 +85,44 @@ class Car(Agent):
         # clip negative velocities to zero
         self.vel[0] = max(self.vel[0], 0)
 
-
         ### 4. move car to new position
         pos = self.pos + self.vel * self.model.time_step
         # if changing lane check if lane change finished
         if self.target_lane != None:
             self.lane = self.model.space.lane_at(pos)
             #print(self.lane, self.model.space.distance_from_center_of_lane(pos), self.model.space.lane_width / self.model.lane_change_time * self.model.time_step)
-            if self.lane == self.target_lane and np.abs(self.model.space.distance_from_center_of_lane(pos)) < self.model.space.lane_width / self.model.lane_change_time * self.model.time_step:
+            if self.lane == self.target_lane and np.abs(
+                    self.model.space.distance_from_center_of_lane(pos)
+            ) < self.model.space.lane_width / self.model.lane_change_time * self.model.time_step:
                 self.target_lane = None
                 self.vel[1] = 0
                 pos[1] = (self.lane + 0.5) * self.model.space.lane_width
                 #print("{} lane_change finish".format(self.unique_id))
         self.model.space.move_agent(self, pos)
 
-
     def update_velocity(self):
         vel_new = self.vel
 
         ### 1. accelerate if not maximum speed
         if vel_new[0] < self.max_speed:
-            vel_new[0] = min(vel_new[0] + self.model.car_acc * self.model.time_step, self.max_speed)
+            vel_new[0] = min(
+                vel_new[0] + self.model.car_acc * self.model.time_step,
+                self.max_speed)
 
         ### 2. prevent collision with other cars
         cars_front = self.model.space.cars_in_range(self)
         cars_back = self.model.space.cars_in_range(self, forward=False)
 
-         # if car in front
+        # if car in front
         if cars_front[1] != None:
             car, d = cars_front[1]
-            d -= self.model.car_length # absolute distance (bumper-to-bumper)
+            d -= self.model.car_length  # absolute distance (bumper-to-bumper)
 
             # if needs to brake in order to keep minimum spacing
-            if d < vel_new[0] * (self.model.time_step + self.model.min_spacing):
-                vel_new[0] = d / (self.model.time_step + self.model.min_spacing)
+            if d < vel_new[0] * (
+                    self.model.time_step + self.model.min_spacing):
+                vel_new[0] = d / (
+                    self.model.time_step + self.model.min_spacing)
 
         ### 3. randomly slow down
         if self.random.random() < self.model.p_slowdown:
@@ -131,14 +139,6 @@ class Car(Agent):
 
         self.model.space.move_agent(self, self.pos)
 
-        
-
-
-
-
-
-
-
     def overtake(self, cars_dict):
         """
         cars_dict -- (ordered)dict of type {direction: [Car]}
@@ -150,7 +150,6 @@ class Car(Agent):
 
         self.slow_down()
         self.center_on_current_lane()
-
 
     def move_to_right_lane(self):
         pass
@@ -173,8 +172,6 @@ class Car(Agent):
     def is_left_of_center(self):
         return self.pos[0] % self.model.lane_width > 0.5
 
-
-
     def relative_distance_to(self, car, dimension=0):
         # in seconds
         distance_abs = self.pos[0] - car.pos[0]
@@ -183,7 +180,3 @@ class Car(Agent):
     def distance_in_seconds(self, car):
         distance_abs = self.pos[0] - car.pos[0]
         return util.distance_in_seconds(distance_abs, self.vel[0], car.vel[0])
-
-
- 
-
