@@ -31,32 +31,37 @@ Code
 ### indirect approach (preferred)
 overtake reasoning
 ```python
-# 1
-accelerate etc...
+def step():
+ vel_next = vel()
+ pos = self.pos + vel
 
-# 2 prevent collisions
-if car_in_front:
- if not right_of_center_of_lane:
-  will_switch_lane = switch_lane(priority=left)  
-else:
- if not will_switch_lane:
-  chance to go to the right lane (based on personal preference)
- else:
-  center on current lane
+def vel(): # intended velocity of agent
+  vel_next = vel
+  # 1
+  accelerate until max speed etc...
+ 
+  # 2 prevent collisions
+  if car_in_front:
+    if not right_of_center_of_lane:
+      attempt_to_switch_to_lane([left,right])
+    else:
+      attempt_to_switch_to_lane([left,right])
 
-# 3
+  else: # no car in front
+    if chance to go to the right lane > random(): # (probability based on personal preference)
+       attempt_to_switch_to_lane([right])
+    else:
+      center_on_current_lane()
+ 
+  return vel_next()
 
-def switch_lane(priority=left):
-  if can_go_to_lane(left):
-     steer(left)
-   if can_go_to_lane(right):
-     steer(right)
- else:
-   if can_go_to_lane(right):
-     steer(right)
-   if can_go_to_lane(left):
-     steer(left)
-return True if steering succeeded
+
+def switch_lane(direction=[left,right]):
+ for direction in directions:
+  if can_go_to_lane(direction):
+     steer(direction)
+     return
+  center_on_current_lane()
 
 ```
 
