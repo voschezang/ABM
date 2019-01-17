@@ -30,7 +30,7 @@ Code
 
 ### indirect approach (preferred)
 overtake reasoning
-```
+```python
 # 1
 accelerate etc...
 
