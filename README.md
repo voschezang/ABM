@@ -28,12 +28,37 @@ Code
 - add state : `{driving, switching lane}`
 - add choice set : `{switch lane, stay on lane}`
 
-### indirect approach
-add rules such as
- - `if on lane and car_in_fron: switch lane`
- - `if in between lanes and car_in_front_and_right: go left`
- - `if in between lanes and car_in_front_and_left: go right`
+### indirect approach (preferred)
+overtake reasoning
+```
+# 1
+accelerate etc...
 
+# 2 prevent collisions
+if car_in_front:
+ if not right_of_center_of_lane:
+  will_switch_lane = switch_lane(priority=left)  
+else:
+ if not will_switch_lane:
+  chance to go to the right lane (based on personal preference)
+ else:
+  center on current lane
+
+# 3
+
+def switch_lane(priority=left):
+  if can_go_to_lane(left):
+     steer(left)
+   if can_go_to_lane(right):
+     steer(right)
+ else:
+   if can_go_to_lane(right):
+     steer(right)
+   if can_go_to_lane(left):
+     steer(left)
+return True if steering succeeded
+
+```
 
 
 
