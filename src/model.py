@@ -89,3 +89,12 @@ class MyModel(Model):
 
             self.space.place_agent(car, car.pos)
             self.schedule.add(car)
+
+    def delay_time_to_probability(T=0):
+        # compute the probability required to simulate a delay in communication
+        # used to simulate reaction time
+        # f = 1/T
+        T_in_timesteps = T / self.time_step
+        f = 1 / T_in_timesteps
+        p = f
+        return p
