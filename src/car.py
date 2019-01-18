@@ -119,18 +119,3 @@ class Car(Agent):
         return vel
 
     
-
-    # predicates
-
-    def is_left_of_center(self):
-        return self.pos[0] % self.model.lane_width > 0.5
-
-    def car_in_front(self, cars):
-        chosen_car = None
-        distance = self.model.min_spacing
-        for car in cars:
-            car_distance = self.relative_distance_to(car)
-            if car_distance < self.model.min_spacing:
-                if car_distance < distance:
-                    chosen_car = car
-        return (chosen_car, distance)

@@ -168,13 +168,4 @@ class Road(ContinuousSpace):
         return util.distance_in_seconds(distance_abs, a.vel[dimension],
                                         b.vel[dimension])
 
-    def is_in_front_of(self, a, b):
-        """evaluate whether Agent a if in front of Agent b"""
-        chosen_car = None
-        distance = self.model.min_spacing
-        for car in cars:
-            car_distance = self.relative_distance_to(car)
-            if car_distance < self.model.min_spacing:
-                if car_distance < distance:
-                    chosen_car = car
-        return (chosen_car, distance)
+    
