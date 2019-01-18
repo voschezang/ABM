@@ -32,12 +32,12 @@ class Road(ContinuousSpace):
         self.n_lanes = n_lanes
         self.lane_width = lane_width
 
-    @override
+    # override
     def place_agent(self, agent, pos):
         super().place_agent(agent, pos)
         agent.lane = self.lane_at(pos)
 
-    @override
+    # override
     def move_agent(self, agent, pos):
         super().move_agent(agent, pos)
         agent.lane = self.lane_at(pos)
