@@ -6,7 +6,7 @@ from .model import MyModel
 from .SimpleContinuousModule import SimpleCanvas
 
 # parameters
-length = 500
+length = 5000
 car_length = 5
 car_width = 1.8
 lane_width = 3.5
@@ -46,9 +46,9 @@ def car_portrayal(agent):
         "w": car_length / length,  # relative to space
         "h": car_width / (MyModel.max_lanes * lane_width),  # relative
         "Filled": "true",
-        "Color": "rgba(0, 0, 255, 0.4)",
-        "text": agent.unique_id,
-        "textColor": "black"
+        "Color": "rgba(0, 0, 255, 1.0)"
+        #"text": agent.unique_id,
+        #"textColor": "black"
     }
 
 
