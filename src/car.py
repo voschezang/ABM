@@ -46,8 +46,7 @@ class Car(Agent):
         """update the property `vel_next`: the intended velocity of agent based of the current state."""
 
         ### 1. accelerate if not maximum speed
-        vel_next = self.accelerate_vel(
-            self.vel.copy())
+        vel_next = self.accelerate_vel(self.vel.copy())
 
         ### 2. prevent collision with other cars
         # TODO combine searching (search forward for cars in current lane and backward for cars in adjacent lanes)
@@ -57,8 +56,10 @@ class Car(Agent):
         neighbours = self.model.space.all_neighbours(self)
 
         # if car in front
-        if neighbours.f and self.needs_to_brake(vel_next, neighbours.f_d - self.model.car_length):
-            if not self.model.space.is_right_of_center_of_lane(self.pos):  # i.e. in the middle or left
+        if neighbours.f and self.needs_to_brake(
+                vel_next, neighbours.f_d - self.model.car_length):
+            if not self.model.space.is_right_of_center_of_lane(
+                    self.pos):  # i.e. in the middle or left
                 if self.unique_id == 1:
                     print(self.unique_id, "try left")
                 success, vel_next = self.model.space.steer_to_lane(
@@ -72,8 +73,10 @@ class Car(Agent):
             if not success:
                 if self.unique_id == 1:
                     print(self.unique_id, "brake")
-                vel_next = self.model.space.center_on_current_lane(self.pos, vel_next)
-                vel_next = self.brake(vel_next, neighbours.f_d - self.model.car_length)
+                vel_next = self.model.space.center_on_current_lane(
+                    self.pos, vel_next)
+                vel_next = self.brake(vel_next,
+                                      neighbours.f_d - self.model.car_length)
 
         # no car in front
         else:
@@ -83,13 +86,15 @@ class Car(Agent):
                 succes, vel_next = self.model.space.steer_to_lane(
                     self, vel_next, neighbours, [Direction.R])
                 if not succes:
-                    vel_next = self.model.space.center_on_current_lane(self.pos, vel_next)
+                    vel_next = self.model.space.center_on_current_lane(
+                        self.pos, vel_next)
                     if self.unique_id == 1:
                         print(self.unique_id, "center 1")
             else:
                 if self.unique_id == 1:
                     print(self.unique_id, "center 2")
-                vel_next = self.model.space.center_on_current_lane(self.pos, vel_next)
+                vel_next = self.model.space.center_on_current_lane(
+                    self.pos, vel_next)
 
         ### 3. randomly slow down
         if self.random.random() < self.model.p_slowdown:
@@ -99,23 +104,19 @@ class Car(Agent):
         vel_next[0] = max(vel_next[0], 0)
 
         self.vel_next = vel_next
-        
 
     def accelerate_vel(self, vel):
         # returns accelerated vel, upper limited by the maximum speed
-        vel[0] = min(
-            vel[0] + self.model.car_acc * self.model.time_step,
-            self.max_speed)
+        vel[0] = min(vel[0] + self.model.car_acc * self.model.time_step,
+                     self.max_speed)
         return vel
 
     def needs_to_brake(self, vel, distance):
         """Returns if needs to brake in order to keep minimum spacing"""
-        return distance < vel[0] * (self.model.time_step + self.model.min_spacing)
+        return distance < vel[0] * (
+            self.model.time_step + self.model.min_spacing)
 
     def brake(self, vel, distance):
         if self.needs_to_brake(vel, distance):
-            vel[0] = distance / (
-                self.model.time_step + self.model.min_spacing)
+            vel[0] = distance / (self.model.time_step + self.model.min_spacing)
         return vel
-
-    
