@@ -10,16 +10,17 @@ class Direction(IntEnum):
     C = 0
     R = +1
 
+
 # tuple for storing neighbours.
 # f -- front
 # b -- back
 # l -- left
 # r -- right
 # d -- distance
-Neighbours = namedtuple("Neighbours", 
-    ["f_l", "b_l", "f_l_d", "b_l_d",
-     "f", "b", "f_d", "b_d",
-     "f_r", "b_r", "f_r_d", "b_r_d"])
+Neighbours = namedtuple("Neighbours", [
+    "f_l", "b_l", "f_l_d", "b_l_d", "f", "b", "f_d", "b_d", "f_r", "b_r",
+    "f_r_d", "b_r_d"
+])
 
 
 class Road(ContinuousSpace):
@@ -62,8 +63,10 @@ class Road(ContinuousSpace):
             return []
         if not isinstance(exclude, (list, tuple)):
             exclude = [exclude]
-        return [car for car in self._index_to_agent.values() if car.lane == lane and car not in exclude]
-
+        return [
+            car for car in self._index_to_agent.values()
+            if car.lane == lane and car not in exclude
+        ]
 
     def distance(self, a, b, forward=True):
         """Returns forward/backward distance from a to b
@@ -81,7 +84,6 @@ class Road(ContinuousSpace):
                 d += self.length
         return d
 
-
     def neighbours(self, car, lane=None):
         """Get the first car in a lane in front and back, and the distance to them (if they exist).
         
@@ -96,7 +98,8 @@ class Road(ContinuousSpace):
         """
         cars = [None, None]
         distances = [-1, -1]
-        for x in self.cars_in_lane(lane if lane != None else car.lane, exclude=car):
+        for x in self.cars_in_lane(
+                lane if lane != None else car.lane, exclude=car):
             for i, forward in enumerate([True, False]):
                 d = self.distance(car, x, forward)
                 if cars[i] == None or (d > 0 and d < distances[i]):
@@ -107,21 +110,13 @@ class Road(ContinuousSpace):
 
     def all_neighbours(self, car):
         """Return all neighbours for a car"""
-        lanes = car.lane + np.array([-1,0,1])
+        lanes = car.lane + np.array([-1, 0, 1])
 
         (cars_l, dists_l) = self.neighbours(car, car.lane - 1)
         (cars, dists) = self.neighbours(car, car.lane)
         (cars_r, dists_r) = self.neighbours(car, car.lane + 1)
 
-        return Neighbours(*cars_l, *dists_l,
-                          *cars, *dists,
-                          *cars_r, *dists_r)
-
-
-
-    
-
-    
+        return Neighbours(*cars_l, *dists_l, *cars, *dists, *cars_r, *dists_r)
 
     def steer_to_lane(self, car, vel, neighbours, directions=[Direction.R]):
         # TODO
@@ -141,11 +136,15 @@ class Road(ContinuousSpace):
         """Returns whether there is room fo a car (at pos, with vel) to change lane in direction (L/R)"""
         f = neighbours.f_l if direction == Direction.L else neighbours.f_r
         b = neighbours.b_l if direction == Direction.L else neighbours.b_r
-        f_d = (neighbours.f_l_d if direction == Direction.L else neighbours.f_r_d) - self.model.car_length
-        b_d = (neighbours.b_l_d if direction == Direction.L else neighbours.b_r_d) - self.model.car_length
+        f_d = (neighbours.f_l_d if direction == Direction.L else
+               neighbours.f_r_d) - self.model.car_length
+        b_d = (neighbours.b_l_d if direction == Direction.L else
+               neighbours.b_r_d) - self.model.car_length
 
-        if not f or f_d > vel[0] * (self.model.time_step + self.model.min_spacing):
-            if not b or b_d > b.vel[0] * (self.model.time_step + self.model.min_spacing):
+        if not f or f_d > vel[0] * (
+                self.model.time_step + self.model.min_spacing):
+            if not b or b_d > b.vel[0] * (
+                    self.model.time_step + self.model.min_spacing):
                 return True
         return False
 
@@ -155,7 +154,8 @@ class Road(ContinuousSpace):
 
     def center_on_current_lane(self, pos, vel):
         d = self.distance_from_center_of_lane(pos)
-        direction = Direction.L if self.is_right_of_center_of_lane(pos) else Direction.R
+        direction = Direction.L if self.is_right_of_center_of_lane(
+            pos) else Direction.R
         vel = self.steer(vel, direction)
 
         if direction * (vel[1] * self.model.time_step + d) > 0:
@@ -167,5 +167,3 @@ class Road(ContinuousSpace):
         distance_abs = a.pos[dimension] - b.pos[dimension]
         return util.distance_in_seconds(distance_abs, a.vel[dimension],
                                         b.vel[dimension])
-
-    
