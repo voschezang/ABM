@@ -79,10 +79,10 @@ class MyModel(Model):
             y = (self.random.randint(0, self.space.n_lanes - 1) + 0.5
                  ) * self.space.lane_width
             pos = (x, y)
-            vel = (self.max_speed, 0)
+            vel = (self.max_speed if i == 0 else self.max_speed/2, 0)
             max_speed = np.random.normal(self.max_speed, 0)
-            bias_right_lane = 1  # TODO stochastic?
-            minimal_overtake_distance = 2  # TODO stochastic?
+            bias_right_lane = 1.0  # TODO stochastic?
+            minimal_overtake_distance = 2.0  # TODO stochastic?
 
             car = Car(self.next_id(), self, pos, vel, max_speed,
                       bias_right_lane, minimal_overtake_distance)
