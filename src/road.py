@@ -32,17 +32,15 @@ class Road(ContinuousSpace):
         self.n_lanes = n_lanes
         self.lane_width = lane_width
 
-    ### override
-
+    @override
     def place_agent(self, agent, pos):
         super().place_agent(agent, pos)
         agent.lane = self.lane_at(pos)
 
+    @override
     def move_agent(self, agent, pos):
         super().move_agent(agent, pos)
         agent.lane = self.lane_at(pos)
-
-    ###
 
     def lane_at(self, pos):
         """Returns the lane number of a position"""
@@ -70,7 +68,7 @@ class Road(ContinuousSpace):
 
     def distance(self, a, b, forward=True):
         """Returns forward/backward distance from a to b
-        
+
         Note
         ----
         returned distance does not include car size, so distance is center-to-center
@@ -86,7 +84,7 @@ class Road(ContinuousSpace):
 
     def neighbours(self, car, lane=None):
         """Get the first car in a lane in front and back, and the distance to them (if they exist).
-        
+
         Parameters
         ----------
         car -- to get the neighbours of.

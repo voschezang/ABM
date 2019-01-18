@@ -30,7 +30,7 @@ class Car(Agent):
         self.max_speed = max_speed
         self.bias_right_lane = bias_right_lane
         self.minimal_overtake_distance = minimal_overtake_distance
-        self.target_lane = None
+        self.lane = None
 
     def step(self):
         self.update_vel_next()
