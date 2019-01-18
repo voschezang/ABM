@@ -89,7 +89,6 @@ class Road(ContinuousSpace):
         ----------
         car -- to get the neighbours of.
         lane -- in which to look for neighbours (if `None` uses the current lane of `car`).
-
         Returns
         -------
         tuple ([car_front, car_back], [distance_front, distance_back]).

@@ -97,8 +97,8 @@ class Car(Agent):
                     self.pos, vel_next)
 
         ### 3. randomly slow down
-        if self.random.random() < self.model.p_slowdown:
-            vel_next[0] -= self.model.car_acc * self.model.time_step
+        if self.will_randomly_slow_down():
+            self.random_slow_down(vel_next)
 
         # clip negative velocities to zero
         vel_next[0] = max(vel_next[0], 0)
@@ -107,16 +107,26 @@ class Car(Agent):
 
     def accelerate_vel(self, vel):
         # returns accelerated vel, upper limited by the maximum speed
-        vel[0] = min(vel[0] + self.model.car_acc * self.model.time_step,
+        vel[0] = min(vel[0] + self.model.car_acc_up * self.model.time_step,
                      self.max_speed)
         return vel
 
     def needs_to_brake(self, vel, distance):
         """Returns if needs to brake in order to keep minimum spacing"""
+        # TODO use reaction time
         return distance < vel[0] * (
             self.model.time_step + self.model.min_spacing)
 
     def brake(self, vel, distance):
+        # TODO distance in seconds
         if self.needs_to_brake(vel, distance):
             vel[0] = distance / (self.model.time_step + self.model.min_spacing)
+        return vel
+
+    def will_randomly_slow_down(self):
+        return (self.random.random() <
+                self.model.p_slowdown / 3600 * self.model.time_step)
+
+    def random_slow_down(self, vel):
+        vel[0] -= self.model.car_acc_down * self.model.time_step
         return vel

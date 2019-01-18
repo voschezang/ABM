@@ -1,7 +1,6 @@
 import numpy as np
 
 from mesa import Model
-from mesa.space import ContinuousSpace
 from mesa.time import StagedActivation, RandomActivation
 from mesa.datacollection import DataCollector
 
@@ -37,7 +36,7 @@ class MyModel(Model):
         car_length -- length of each car.
         min_spacing -- the minimum distance cars keep from each other (bumper to bumper) in seconds.
         car_acc -- acceleration of the cars.
-        p_slowdown -- probability of a car slowing down at random.
+        p_slowdown -- probability of a car slowing down per hour.
         time_step -- in seconds.
         """
 
@@ -48,10 +47,11 @@ class MyModel(Model):
         self.max_speed = max_speed / 3.6
         self.car_length = car_length
         self.min_spacing = min_spacing
-        self.car_acc = car_acc
+        self.car_acc_up = car_acc_up
+        self.car_acc_down = car_acc_down
         self.p_slowdown = p_slowdown
         self.time_step = time_step
-        self.lane_change_time = 2
+        self.lane_change_time = 2  # TODO use rotation matrix
 
         self.space = Road(self, length, n_lanes, lane_width, torus=True)
 
