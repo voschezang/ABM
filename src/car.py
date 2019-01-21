@@ -38,8 +38,13 @@ class Car(Agent):
 
     def move(self):
         self.vel = self.vel_next
-        self.pos += self.vel * self.model.time_step
+        self.pos += self.vel * self.model.time_step  
 
+        if not self.model.space.torus and self.model.space.out_of_bounds(self.pos):
+            self.model.space.remove_agent(self)
+            self.model.schedule.remove(self)    
+            return
+            
         self.model.space.move_agent(self, self.pos)
 
     def update_vel_next(self):
@@ -49,8 +54,7 @@ class Car(Agent):
         vel_next = self.accelerate_vel(self.vel.copy())
 
         ### 2. prevent collision with other cars
-        # TODO combine searching (search forward for cars in current lane and backward for cars in adjacent lanes)
-        # (optional) stop searching adjacent lanes when a blocking car is found
+        # TODO (optional) stop searching adjacent lanes when a blocking car is found
         #   i.e. a reason that makes overtaking impossible
         # We may have to simplify the interface, i.e. store cars per lane and simply iterate all cars in that lane, instead of searching in a radius
         neighbours = self.model.space.all_neighbours(self)
@@ -62,12 +66,12 @@ class Car(Agent):
                     self.pos):  # i.e. in the middle or left
                 if self.unique_id == 1:
                     print(self.unique_id, "try left")
-                success, vel_next = self.model.space.steer_to_lane(
+                success, vel_next = self.model.space.try_change_lanes(
                     self, vel_next, neighbours, [Direction.L, Direction.R])
             else:
                 if self.unique_id == 1:
                     print(self.unique_id, "try right")
-                success, vel_next = self.model.space.steer_to_lane(
+                success, vel_next = self.model.space.try_change_lanes(
                     self, vel_next, neighbours, [Direction.R, Direction.L])
 
             if not success:
@@ -83,7 +87,7 @@ class Car(Agent):
             if self.random.random() < self.bias_right_lane:
                 if self.unique_id == 1:
                     print(self.unique_id, "try right bias")
-                succes, vel_next = self.model.space.steer_to_lane(
+                succes, vel_next = self.model.space.try_change_lanes(
                     self, vel_next, neighbours, [Direction.R])
                 if not succes:
                     vel_next = self.model.space.center_on_current_lane(
@@ -107,7 +111,7 @@ class Car(Agent):
 
     def accelerate_vel(self, vel):
         # returns accelerated vel, upper limited by the maximum speed
-        vel[0] = min(vel[0] + self.model.car_acc_up * self.model.time_step,
+        vel[0] = min(vel[0] + self.model.car_acc * self.model.time_step,
                      self.max_speed)
         return vel
 
@@ -128,5 +132,17 @@ class Car(Agent):
                 self.model.p_slowdown / 3600 * self.model.time_step)
 
     def random_slow_down(self, vel):
-        vel[0] -= self.model.car_acc_down * self.model.time_step
+        vel[0] -= self.model.car_dec * self.model.time_step
+        return vel
+
+    def steer(self, vel, degrees):
+        """Rotate the velocity vector with a number of degrees."""
+        # example:
+        # change lanes in 2 seconds, determine angle 
+        # angle = ArcTan(3.5 / 2 / 33) = 3
+        angle = np.radians(degrees)
+        cos = np.cos(angle)
+        sin = np.sin(angle)
+        rotation_matrix = np.array([[cos, -sin], [sin, cos]])
+        vel = rotation_matrix @ vel
         return vel

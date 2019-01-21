@@ -22,7 +22,6 @@ Neighbours = namedtuple("Neighbours", [
     "f_r_d", "b_r_d"
 ])
 
-
 class Road(ContinuousSpace):
     def __init__(self, model, length, n_lanes, lane_width, torus):
         super().__init__(length, n_lanes * lane_width, torus)
@@ -32,12 +31,10 @@ class Road(ContinuousSpace):
         self.n_lanes = n_lanes
         self.lane_width = lane_width
 
-    @override
     def place_agent(self, agent, pos):
         super().place_agent(agent, pos)
         agent.lane = self.lane_at(pos)
 
-    @override
     def move_agent(self, agent, pos):
         super().move_agent(agent, pos)
         agent.lane = self.lane_at(pos)
@@ -54,6 +51,9 @@ class Road(ContinuousSpace):
 
     def is_right_of_center_of_lane(self, pos):
         return self.distance_from_center_of_lane(pos) > 0
+
+    def center_of_lane(self, lane):
+        return (lane + 0.5) * self.lane_width
 
     def cars_in_lane(self, lane, exclude=[]):
         """Returns all cars in a certain lane (optionally excluding some cars)"""
@@ -99,7 +99,7 @@ class Road(ContinuousSpace):
                 lane if lane != None else car.lane, exclude=car):
             for i, forward in enumerate([True, False]):
                 d = self.distance(car, x, forward)
-                if cars[i] == None or (d > 0 and d < distances[i]):
+                if d > 0 and (cars[i] == None or d < distances[i]):
                     cars[i] = x
                     distances[i] = d
 
@@ -115,7 +115,7 @@ class Road(ContinuousSpace):
 
         return Neighbours(*cars_l, *dists_l, *cars, *dists, *cars_r, *dists_r)
 
-    def steer_to_lane(self, car, vel, neighbours, directions=[Direction.R]):
+    def try_change_lanes(self, car, vel, neighbours, directions=[Direction.R]):
         # TODO
         # compute the velocity required to steer a car to another lane
         # returns a tuple (success: bool, vel: (int,int) )
@@ -148,7 +148,7 @@ class Road(ContinuousSpace):
     def steer(self, vel, direction):
         vel[1] = direction * self.lane_width / self.model.lane_change_time
         return vel
-
+ 
     def center_on_current_lane(self, pos, vel):
         d = self.distance_from_center_of_lane(pos)
         direction = Direction.L if self.is_right_of_center_of_lane(

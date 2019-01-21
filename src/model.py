@@ -10,11 +10,24 @@ from .road import Road
 
 ### datacollection functions
 
+def density(model):
+    """Density: number of cars per unit length of road."""
+    return len(model.schedule.agents) / model.space.length
 
-def vel0(model):
-    """Velocity of car 0"""
-    return model.schedule.agents[0].vel[0]
+def flow(model):
+    """Flow: number of cars passing a reference point per unit of time."""
+    reference_pont = model.space.length / 2
 
+    for car in model.schedule.agents:
+        if car.pos[0] > reference_pont:
+            model.flow_cars.add(car.unique_id)
+
+    if model.schedule.time * model.time_step % 10 < model.time_step:
+        model.flow = len(model.flow_cars.difference(model.flow_cars_previous))
+        model.flow_cars_previous = model.flow_cars
+        model.flow_cars = set()
+
+    return model.flow
 
 ###
 
@@ -23,7 +36,7 @@ class MyModel(Model):
     max_lanes = 10
 
     def __init__(self, length, lane_width, n_lanes, n_cars, max_speed,
-                 car_length, min_spacing, car_acc, p_slowdown, time_step):
+                 car_length, min_spacing, car_acc, car_dec, p_slowdown, time_step):
         """Initialise the traffic model.
 
         Parameters
@@ -35,7 +48,8 @@ class MyModel(Model):
         max_speed -- maximum speed cars can (and want to) travel at in km/h (is converted to m/s).
         car_length -- length of each car.
         min_spacing -- the minimum distance cars keep from each other (bumper to bumper) in seconds.
-        car_acc -- acceleration of the cars.
+        car_acc -- acceleration of the cars (in m\s2).
+        car_dec -- deceleration of the cars (in m\s2).
         p_slowdown -- probability of a car slowing down per hour.
         time_step -- in seconds.
         """
@@ -47,13 +61,13 @@ class MyModel(Model):
         self.max_speed = max_speed / 3.6
         self.car_length = car_length
         self.min_spacing = min_spacing
-        self.car_acc_up = car_acc_up
-        self.car_acc_down = car_acc_down
+        self.car_acc = car_acc
+        self.car_dec = car_dec
         self.p_slowdown = p_slowdown
         self.time_step = time_step
         self.lane_change_time = 2  # TODO use rotation matrix
 
-        self.space = Road(self, length, n_lanes, lane_width, torus=True)
+        self.space = Road(self, length, n_lanes, lane_width, torus=False)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
         # self.schedule = RandomActivation(self)
@@ -62,22 +76,43 @@ class MyModel(Model):
             shuffle=False,
             shuffle_between_stages=False)
 
-        self.make_agents()
+        #self.make_agents()
 
         # create data collectors
-        self.data_collector = DataCollector(model_reporters={"Velocity": vel0})
+        self.flow = 0
+        self.flow_cars = set()
+        self.flow_cars_previous = set()
+        self.data_collector = DataCollector(model_reporters={
+            "Density": density,
+            "Flow": flow})
 
     def step(self):
-        self.data_collector.collect(self)
+        self.generate_cars()
         self.schedule.step()
+        self.data_collector.collect(self)
 
     def make_agents(self):
         """Create self.n_cars number of agents and add them to the model (space, schedule)"""
 
         for i in range(self.n_cars):
             x = self.random.random() * self.space.length
-            y = (self.random.randint(0, self.space.n_lanes - 1) + 0.5
-                 ) * self.space.lane_width
+            y = self.space.center_of_lane(self.random.randint(0, self.space.n_lanes - 1))
+            pos = (x, y)
+            vel = (self.max_speed, 0)
+            max_speed = np.random.normal(self.max_speed if i == 0 else self.max_speed/3, 5)
+            bias_right_lane = 1.0  # TODO stochastic?
+            minimal_overtake_distance = 2.0  # TODO stochastic?
+
+            car = Car(self.next_id(), self, pos, vel, max_speed,
+                      bias_right_lane, minimal_overtake_distance)
+
+            self.space.place_agent(car, car.pos)
+            self.schedule.add(car)
+
+    def generate_cars(self):
+        if self.random.random() < 0.1:
+            x = 0 # self.random.random() * self.space.length
+            y = self.space.center_of_lane(self.random.randint(0, self.space.n_lanes - 1))
             pos = (x, y)
             vel = (self.max_speed, 0)
             max_speed = np.random.normal(self.max_speed, 5)
