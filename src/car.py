@@ -83,7 +83,7 @@ class Car(Agent):
                 self.action = Action.overtake
             else:
                 self.action = Action.center
-                if self.unique_id == 1:
+                if self.model.verbose > 2 and self.unique_id == 1:
                     print(self.unique_id, "brake")
                 vel_next = self.model.space.center_on_current_lane(
                     self.pos, vel_next)
@@ -96,7 +96,7 @@ class Car(Agent):
             if self.action == Action.right or \
                self.random.random() < self.bias_right_lane:
                 # TODO scale probability with dt
-                if self.unique_id == 1:
+                if self.model.verbose > 2 and self.unique_id == 1:
                     print(self.unique_id, "try right bias")
                 success, vel_next = self.model.space.steer_to_lane(
                     self, vel_next, neighbours, [Direction.R])
@@ -106,11 +106,11 @@ class Car(Agent):
                     self.action = Action.center
                     vel_next = self.model.space.center_on_current_lane(
                         self.pos, vel_next)
-                    if self.unique_id == 1:
+                    if self.model.verbose > 2 and self.unique_id == 1:
                         print(self.unique_id, "center 1")
             else:
                 self.action = Action.center
-                if self.unique_id == 1:
+                if self.model.verbose > 2 and self.unique_id == 1:
                     print(self.unique_id, "center 2")
                 vel_next = self.model.space.center_on_current_lane(
                     self.pos, vel_next)
@@ -165,12 +165,12 @@ class Car(Agent):
         # Returns a tuple (success: bool, required_vel: [int,int] )
         if not self.model.space.is_right_of_center_of_lane(
                 self.pos):  # i.e. in the middle or left
-            if self.unique_id == 1:
+            if self.model.verbose > 2 and self.unique_id == 1:
                 print(self.unique_id, "try left")
             success, vel_next = self.model.space.steer_to_lane(
                 self, vel_next, neighbours, [Direction.L, Direction.R])
         else:
-            if self.unique_id == 1:
+            if self.model.verbose > 2 and self.unique_id == 1:
                 print(self.unique_id, "try right")
             success, vel_next = self.model.space.steer_to_lane(
                 self, vel_next, neighbours, [Direction.R, Direction.L])

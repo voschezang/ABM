@@ -14,9 +14,20 @@ class Model(mesa.Model):
     MAX_LANES = 10
     BIAS_RIGHT_LANE_SECONDS = 60
 
-    def __init__(self, length, lane_width, n_lanes, flow, max_speed,
-                 car_length, min_spacing, car_acc, car_dec, p_slowdown,
-                 time_step):
+    def __init__(self,
+                 length=1,
+                 lane_width=1,
+                 n_lanes=1,
+                 flow=1,
+                 max_speed=10,
+                 car_length=2,
+                 min_spacing=1,
+                 car_acc=1,
+                 car_dec=2,
+                 p_slowdown=0,
+                 time_step=1,
+                 seed=None,
+                 verbose=3):
         """Initialise the traffic model.
 
         Parameters
@@ -35,7 +46,7 @@ class Model(mesa.Model):
         """
 
         super().__init__()
-        np.random.seed()
+        np.random.seed(seed)
 
         self.time_step = time_step
         self.flow = self.probability_per(flow * n_lanes, seconds=1)
@@ -61,38 +72,39 @@ class Model(mesa.Model):
             "Density": data.density,
             "Flow": data.flow
         })
-        self.v = 1  # verbose lvl
+        self.verbose = 1
 
     def step(self):
         self.generate_cars()
-        self.generate_cars()
-        self.generate_cars()
-        self.schedule.step()
         self.data_collector.collect(self)
 
     def generate_cars(self):
         if self.random.random() < self.flow:
             self.generate_car()
 
-    def generate_car(self):
-        max_speed_sigma = 5
+    def generate_car(self,
+                     max_speed_sigma=5,
+                     bias_right_lane=0.5,
+                     bias_right_lane_sigma=3,
+                     minimal_overtake_distance=2.0):
         max_speed = self.stochastic_params(
             self.max_speed, max_speed_sigma, seconds=None)
         vel = np.array([self.max_speed, 0])
         # bias to go to the right lane (probability based, per minute)
         bias_right_lane = self.stochastic_params(
-            0.5, sigma=3, seconds=Model.BIAS_RIGHT_LANE_SECONDS)
-        minimal_overtake_distance = 2.0  # TODO stochastic?
+            bias_right_lane,
+            bias_right_lane_sigma,
+            seconds=Model.BIAS_RIGHT_LANE_SECONDS)
+        # TODO stochastic minimal_overtake_distance?
         try:
             pos = self.generate_car_position(vel)
-            print('pos', pos)
             car = Car(self.next_id(), self, pos, vel, max_speed,
                       bias_right_lane, minimal_overtake_distance)
 
             self.space.place_agent(car, car.pos)
             self.schedule.add(car)
         except UserWarning as e:
-            if self.v: print(e)
+            if self.verbose: print(e)
 
     def generate_car_position(self, vel, x=0):
         # randomly iterate all lanes until an empty slot is found
@@ -129,7 +141,10 @@ class Model(mesa.Model):
 
     def probability_per(self, p, seconds=60):
         # note that this limits the amount of timesteps
-        assert (seconds > self.time_step)
+        if p == 0:
+            return 0
+        # the probability per second should exceed the time step length
+        assert (seconds >= self.time_step)
         return p * self.time_step / seconds
 
     def probability_to_reset_bias_right_lane(self):
