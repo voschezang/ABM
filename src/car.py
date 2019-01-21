@@ -53,13 +53,14 @@ class Car(Agent):
 
     def move(self):
         self.vel = self.vel_next
-        self.pos += self.vel * self.model.time_step  
+        self.pos += self.vel * self.model.time_step
 
-        if not self.model.space.torus and self.model.space.out_of_bounds(self.pos):
+        if not self.model.space.torus and self.model.space.out_of_bounds(
+                self.pos):
             self.model.space.remove_agent(self)
-            self.model.schedule.remove(self)    
+            self.model.schedule.remove(self)
             return
-            
+
         self.model.space.move_agent(self, self.pos)
 
     def update_vel_next(self):
@@ -151,7 +152,7 @@ class Car(Agent):
     def steer(self, vel, degrees):
         """Rotate the velocity vector with a number of degrees."""
         # example:
-        # change lanes in 2 seconds, determine angle 
+        # change lanes in 2 seconds, determine angle
         # angle = ArcTan(3.5 / 2 / 33) = 3
         angle = np.radians(degrees)
         cos = np.cos(angle)
