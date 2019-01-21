@@ -70,20 +70,9 @@ class Car(Agent):
         neighbours = self.model.space.all_neighbours(self)
 
         # if car in front
-        if neighbours.f and self.needs_to_brake(
-                vel_next, neighbours.f_d - self.model.car_length):
-            if not self.model.space.is_right_of_center_of_lane(
-                    self.pos):  # i.e. in the middle or left
-                if self.unique_id == 1:
-                    print(self.unique_id, "try left")
-                success, vel_next = self.model.space.steer_to_lane(
-                    self, vel_next, neighbours, [Direction.L, Direction.R])
-            else:
-                if self.unique_id == 1:
-                    print(self.unique_id, "try right")
-                success, vel_next = self.model.space.steer_to_lane(
-                    self, vel_next, neighbours, [Direction.R, Direction.L])
-
+        if neighbours.f and (self.needs_to_brake(
+                vel_next, neighbours.f_d - self.model.car_length)):
+            success, vel_next = self.can_overtake(vel_next)
             if success:
                 self.action = Action.overtake
             else:
@@ -153,6 +142,21 @@ class Car(Agent):
     def random_slow_down(self, vel):
         vel[0] -= self.model.car_acc_neg * self.model.time_step
         return vel
+
+    def can_overtake(self, vel_next):
+        # Returns a tuple (success: bool, required_vel: [int,int] )
+        if not self.model.space.is_right_of_center_of_lane(
+                self.pos):  # i.e. in the middle or left
+            if self.unique_id == 1:
+                print(self.unique_id, "try left")
+            success, vel_next = self.model.space.steer_to_lane(
+                self, vel_next, neighbours, [Direction.L, Direction.R])
+        else:
+            if self.unique_id == 1:
+                print(self.unique_id, "try right")
+            success, vel_next = self.model.space.steer_to_lane(
+                self, vel_next, neighbours, [Direction.R, Direction.L])
+        return (success, vel_next)
 
     def possibly_reset_action(self):
         """ Reset the field `action` by chance iff current action = 'right'
