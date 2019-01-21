@@ -20,7 +20,7 @@ def flow(model):
         model.data.flow_cars_previous = model.data.flow_cars
         model.data.flow_cars = set()
 
-    return model.flow
+    return model.data.flow
 
 
 class Data():

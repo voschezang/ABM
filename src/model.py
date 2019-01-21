@@ -43,11 +43,15 @@ class Model(mesa.Model):
         car_dec -- deceleration of the cars (in m\s2).
         p_slowdown -- probability of a car slowing down per hour.
         time_step -- in seconds.
+        seed -- random seed to use (default `None`, results in time-based seed).
+        verbose -- verbosity level (`0` is silent).
         """
 
         super().__init__()
         np.random.seed(seed)
-
+        self.reset_randomizer(seed)
+        self.verbose = verbose
+    
         self.time_step = time_step
         self.flow = self.probability_per(flow * n_lanes, seconds=1)
         self.max_speed = max_speed / 3.6
@@ -70,12 +74,14 @@ class Model(mesa.Model):
         self.data = data.Data()
         self.data_collector = DataCollector(model_reporters={
             "Density": data.density,
-            "Flow": data.flow
+            "Flow": data.flow # TODO measuring the flow is maybe not necessary,
+            # since the flow rate is a parameter for the simulation,
+            # unless we want to measure the flow rate at another reference point 
         })
-        self.verbose = 1
-
+        
     def step(self):
         self.generate_cars()
+        self.schedule.step()
         self.data_collector.collect(self)
 
     def generate_cars(self):
@@ -110,7 +116,7 @@ class Model(mesa.Model):
         # randomly iterate all lanes until an empty slot is found
         for lane_index in np.random.permutation(self.space.n_lanes):
             x = 0
-            y = (lane_index + 0.5) * self.space.lane_width
+            y = self.space.center_of_lane(lane_index)
             (other_car, _), (distance, _) = self.space.neighbours(
                 None, lane=lane_index)
             # util.distance_in_seconds(distance, vel[0], other_car.vel[0])
