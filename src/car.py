@@ -179,7 +179,7 @@ class Car(Agent):
         """ Reset the field `action` by chance iff current action = 'right'
         """
         if self.action == Action.right:
-            if random.random(
+            if self.random.random(
             ) < 1 / self.bias_right_lane_seconds * self.model.time_step:
                 self.reset_action()
 
