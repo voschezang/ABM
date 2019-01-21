@@ -1,6 +1,6 @@
 import numpy as np
 
-from mesa import Model
+import mesa
 from mesa.time import StagedActivation, RandomActivation
 from mesa.datacollection import DataCollector
 
@@ -10,9 +10,11 @@ from .road import Road
 
 ### datacollection functions
 
+
 def density(model):
     """Density: number of cars per unit length of road."""
     return len(model.schedule.agents) / model.space.length
+
 
 def flow(model):
     """Flow: number of cars passing a reference point per unit of time."""
@@ -29,14 +31,16 @@ def flow(model):
 
     return model.flow
 
+
 ###
 
 
-class MyModel(Model):
+class Model(mesa.Model):
     max_lanes = 10
 
     def __init__(self, length, lane_width, n_lanes, n_cars, max_speed,
-                 car_length, min_spacing, car_acc, car_dec, p_slowdown, time_step):
+                 car_length, min_spacing, car_acc, car_dec, p_slowdown,
+                 time_step):
         """Initialise the traffic model.
 
         Parameters
@@ -85,7 +89,8 @@ class MyModel(Model):
         self.flow_cars_previous = set()
         self.data_collector = DataCollector(model_reporters={
             "Density": density,
-            "Flow": flow})
+            "Flow": flow
+        })
 
     def step(self):
         self.generate_cars()
@@ -97,10 +102,12 @@ class MyModel(Model):
 
         for i in range(self.n_cars):
             x = self.random.random() * self.space.length
-            y = self.space.center_of_lane(self.random.randint(0, self.space.n_lanes - 1))
+            y = self.space.center_of_lane(
+                self.random.randint(0, self.space.n_lanes - 1))
             pos = (x, y)
             vel = (self.max_speed, 0)
-            max_speed = np.random.normal(self.max_speed if i == 0 else self.max_speed/3, 5)
+            max_speed = np.random.normal(self.max_speed
+                                         if i == 0 else self.max_speed / 3, 5)
             bias_right_lane = 1.0  # TODO stochastic?
             minimal_overtake_distance = 2.0  # TODO stochastic?
 
@@ -112,8 +119,9 @@ class MyModel(Model):
 
     def generate_cars(self):
         if self.random.random() < 0.1:
-            x = 0 # self.random.random() * self.space.length
-            y = self.space.center_of_lane(self.random.randint(0, self.space.n_lanes - 1))
+            x = 0  # self.random.random() * self.space.length
+            y = self.space.center_of_lane(
+                self.random.randint(0, self.space.n_lanes - 1))
             pos = (x, y)
             max_speed_sigma = 5
             max_speed = self.stochastic_params(

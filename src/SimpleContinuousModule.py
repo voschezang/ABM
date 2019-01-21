@@ -1,6 +1,6 @@
 from mesa.visualization.ModularVisualization import VisualizationElement
 
-from .model import MyModel
+from .model import Model
 
 
 class SimpleCanvas(VisualizationElement):
@@ -29,8 +29,8 @@ class SimpleCanvas(VisualizationElement):
 
             # scale the y-axis such that a lane does not change it position if the number of lanes is changed
             y = (
-                MyModel.max_lanes - model.space.n_lanes
-            ) / MyModel.max_lanes + y * model.space.n_lanes / MyModel.max_lanes
+                Model.max_lanes - model.space.n_lanes
+            ) / Model.max_lanes + y * model.space.n_lanes / Model.max_lanes
 
             portrayal["x"] = x
             portrayal["y"] = y

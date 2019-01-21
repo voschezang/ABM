@@ -2,7 +2,7 @@ from mesa.visualization.ModularVisualization import ModularServer
 from mesa.visualization.UserParam import UserSettableParameter
 from mesa.visualization.modules import ChartModule
 
-from .model import MyModel
+from .model import Model
 from .SimpleContinuousModule import SimpleCanvas
 
 # parameters
@@ -18,7 +18,7 @@ model_params = {
     lane_width,
     "n_lanes":
     UserSettableParameter(UserSettableParameter.SLIDER, "Number of Lanes", 2,
-                          1, MyModel.max_lanes, 1),
+                          1, Model.max_lanes, 1),
     "n_cars":
     UserSettableParameter(UserSettableParameter.SLIDER, "Number of Cars", 2, 1,
                           100, 1),
@@ -46,7 +46,7 @@ def car_portrayal(agent):
     return {
         "Shape": "rect",
         "w": car_length / length,  # relative to space
-        "h": car_width / (MyModel.max_lanes * lane_width),  # relative
+        "h": car_width / (Model.max_lanes * lane_width),  # relative
         "Filled": "true",
         "Color": "rgba(0, 0, 255, 1.0)",
         "text": agent.unique_id,
@@ -60,12 +60,11 @@ chart = ChartModule(
     [{
         "Label": "Density",
         "Color": "blue"
-    },
-    {
+    }, {
         "Label": "Flow",
         "Color": "red"
     }],
     data_collector_name="data_collector")
 
-server = ModularServer(MyModel, [car_canvas, chart], "Traffic simulation",
+server = ModularServer(Model, [car_canvas, chart], "Traffic simulation",
                        model_params)
