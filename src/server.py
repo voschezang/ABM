@@ -18,10 +18,10 @@ model_params = {
     lane_width,
     "n_lanes":
     UserSettableParameter(UserSettableParameter.SLIDER, "Number of Lanes", 2,
-                          1, Model.max_lanes, 1),
-    "n_cars":
-    UserSettableParameter(UserSettableParameter.SLIDER, "Number of Cars", 2, 1,
-                          100, 1),
+                          1, Model.MAX_LANES, 1),
+    "flow":
+    UserSettableParameter(UserSettableParameter.SLIDER,
+                          "Flow per lane per second", 1, 0, 5, 0.1),
     "max_speed":
     UserSettableParameter(UserSettableParameter.SLIDER, "Maximum speed (km/h)",
                           120, 1, 150, 10),
@@ -46,7 +46,7 @@ def car_portrayal(agent):
     return {
         "Shape": "rect",
         "w": car_length / length,  # relative to space
-        "h": car_width / (Model.max_lanes * lane_width),  # relative
+        "h": car_width / (Model.MAX_LANES * lane_width),  # relative
         "Filled": "true",
         "Color": "rgba(0, 0, 255, 1.0)",
         "text": agent.unique_id,

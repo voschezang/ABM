@@ -29,8 +29,8 @@ class SimpleCanvas(VisualizationElement):
 
             # scale the y-axis such that a lane does not change it position if the number of lanes is changed
             y = (
-                Model.max_lanes - model.space.n_lanes
-            ) / Model.max_lanes + y * model.space.n_lanes / Model.max_lanes
+                Model.MAX_LANES - model.space.n_lanes
+            ) / Model.MAX_LANES + y * model.space.n_lanes / Model.MAX_LANES
 
             portrayal["x"] = x
             portrayal["y"] = y

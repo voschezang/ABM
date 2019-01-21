@@ -7,38 +7,14 @@ from mesa.datacollection import DataCollector
 import src.util as util
 from .car import Car
 from .road import Road
-
-### datacollection functions
-
-
-def density(model):
-    """Density: number of cars per unit length of road."""
-    return len(model.schedule.agents) / model.space.length
-
-
-def flow(model):
-    """Flow: number of cars passing a reference point per unit of time."""
-    reference_pont = model.space.length / 2
-
-    for car in model.schedule.agents:
-        if car.pos[0] > reference_pont:
-            model.flow_cars.add(car.unique_id)
-
-    if model.schedule.time * model.time_step % 10 < model.time_step:
-        model.flow = len(model.flow_cars.difference(model.flow_cars_previous))
-        model.flow_cars_previous = model.flow_cars
-        model.flow_cars = set()
-
-    return model.flow
-
-
-###
+import src.data as data
 
 
 class Model(mesa.Model):
-    max_lanes = 10
+    MAX_LANES = 10
+    BIAS_RIGHT_LANE_SECONDS = 60
 
-    def __init__(self, length, lane_width, n_lanes, n_cars, max_speed,
+    def __init__(self, length, lane_width, n_lanes, flow, max_speed,
                  car_length, min_spacing, car_acc, car_dec, p_slowdown,
                  time_step):
         """Initialise the traffic model.
@@ -48,7 +24,7 @@ class Model(mesa.Model):
         length -- length of the road.
         lane_width -- width of a lane.
         n_lanes -- number of lanes.
-        n_cars -- number of cars.
+        flow -- number of cars generated per lane per second (stochastic)
         max_speed -- maximum speed cars can (and want to) travel at in km/h (will be converted to m/s).
         car_length -- length of each car.
         min_spacing -- the minimum distance cars keep from each other (bumper to bumper) in seconds.
@@ -62,7 +38,7 @@ class Model(mesa.Model):
         np.random.seed()
 
         self.time_step = time_step
-        self.n_cars = n_cars
+        self.flow = self.probability_per(3 * n_lanes, seconds=1)
         self.max_speed = max_speed / 3.6
         self.car_length = car_length
         self.min_spacing = min_spacing
@@ -70,7 +46,6 @@ class Model(mesa.Model):
         self.car_dec = car_dec
         self.p_slowdown = self.probability_per(p_slowdown, seconds=3600)
         self.lane_change_time = 2  # TODO use rotation matrix
-        self.bias_right_lane_seconds = 60
 
         self.space = Road(self, length, n_lanes, lane_width, torus=False)
 
@@ -81,15 +56,10 @@ class Model(mesa.Model):
             shuffle=False,
             shuffle_between_stages=False)
 
-        #self.make_agents()
-
-        # create data collectors
-        self.flow = 0
-        self.flow_cars = set()
-        self.flow_cars_previous = set()
+        self.data = data.Data()
         self.data_collector = DataCollector(model_reporters={
-            "Density": density,
-            "Flow": flow
+            "Density": data.density,
+            "Flow": data.flow
         })
 
     def step(self):
@@ -118,7 +88,7 @@ class Model(mesa.Model):
             self.schedule.add(car)
 
     def generate_cars(self):
-        if self.random.random() < 0.1:
+        if self.random.random() < self.flow:
             x = 0  # self.random.random() * self.space.length
             y = self.space.center_of_lane(
                 self.random.randint(0, self.space.n_lanes - 1))
@@ -129,7 +99,7 @@ class Model(mesa.Model):
             vel = np.array([self.max_speed, 0])
             # bias to go to the right lane (probability based, per minute)
             bias_right_lane = self.stochastic_params(
-                0.5, sigma=3, seconds=self.bias_right_lane_seconds)
+                0.5, sigma=3, seconds=Model.BIAS_RIGHT_LANE_SECONDS)
             minimal_overtake_distance = 2.0  # TODO stochastic?
 
             car = Car(self.next_id(), self, pos, vel, max_speed,
@@ -162,3 +132,8 @@ class Model(mesa.Model):
         # note that this limits the amount of timesteps
         assert (seconds > self.time_step)
         return p * self.time_step / seconds
+
+    def probability_to_reset_bias_right_lane(self):
+        # frequency = 1 / number of seconds
+        # probability = frequency
+        return 1 / BIAS_RIGHT_LANE_SECONDS * self.model.time_step

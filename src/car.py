@@ -181,7 +181,7 @@ class Car(Agent):
         """
         if self.action == Action.right:
             if self.random.random(
-            ) < 1 / self.bias_right_lane_seconds * self.model.time_step:
+            ) < self.model.probability_to_reset_bias_right_lane():
                 self.reset_action()
 
     def reset_action(self):
