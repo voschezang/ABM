@@ -11,7 +11,7 @@ class Direction(IntEnum):
     R = +1
 
 
-# tuple for storing neighbours.
+# tuple to store neighbours.
 # f -- front
 # b -- back
 # l -- left

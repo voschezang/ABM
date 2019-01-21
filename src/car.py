@@ -81,6 +81,7 @@ class Car(Agent):
         # no car in front
         else:
             if self.random.random() < self.bias_right_lane:
+                # TODO scale probability with dt
                 if self.unique_id == 1:
                     print(self.unique_id, "try right bias")
                 succes, vel_next = self.model.space.steer_to_lane(
@@ -107,7 +108,7 @@ class Car(Agent):
 
     def accelerate_vel(self, vel):
         # returns accelerated vel, upper limited by the maximum speed
-        vel[0] = min(vel[0] + self.model.car_acc_up * self.model.time_step,
+        vel[0] = min(vel[0] + self.model.car_acc_pos * self.model.time_step,
                      self.max_speed)
         return vel
 
@@ -128,5 +129,5 @@ class Car(Agent):
                 self.model.p_slowdown / 3600 * self.model.time_step)
 
     def random_slow_down(self, vel):
-        vel[0] -= self.model.car_acc_down * self.model.time_step
+        vel[0] -= self.model.car_acc_neg * self.model.time_step
         return vel

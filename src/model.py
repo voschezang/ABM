@@ -23,7 +23,8 @@ class MyModel(Model):
     max_lanes = 10
 
     def __init__(self, length, lane_width, n_lanes, n_cars, max_speed,
-                 car_length, min_spacing, car_acc, p_slowdown, time_step):
+                 car_length, min_spacing, car_acc_pos, car_acc_neg, p_slowdown,
+                 time_step):
         """Initialise the traffic model.
 
         Parameters
@@ -35,7 +36,8 @@ class MyModel(Model):
         max_speed -- maximum speed cars can (and want to) travel at in km/h (is converted to m/s).
         car_length -- length of each car.
         min_spacing -- the minimum distance cars keep from each other (bumper to bumper) in seconds.
-        car_acc -- acceleration of the cars.
+        car_acc_pos -- positive acceleration of the cars.
+        car_acc_neg -- negative acceleration of the cars.
         p_slowdown -- probability of a car slowing down per hour.
         time_step -- in seconds.
         """
@@ -47,8 +49,8 @@ class MyModel(Model):
         self.max_speed = max_speed / 3.6
         self.car_length = car_length
         self.min_spacing = min_spacing
-        self.car_acc_up = car_acc_up
-        self.car_acc_down = car_acc_down
+        self.car_acc_pos = car_acc_pos
+        self.car_acc_neg = car_acc_neg
         self.p_slowdown = p_slowdown
         self.time_step = time_step
         self.lane_change_time = 2  # TODO use rotation matrix
@@ -80,8 +82,12 @@ class MyModel(Model):
                  ) * self.space.lane_width
             pos = (x, y)
             vel = (self.max_speed, 0)
-            max_speed = np.random.normal(self.max_speed, 5)
-            bias_right_lane = 1.0  # TODO stochastic?
+            max_speed_sigma = 3
+            max_speed = np.random.normal(self.max_speed, max_speed_sigma)
+            max_speed = np.clip(self.max_speed, 0, None)
+            bias_right_lane_sigma = 0.3
+            bias_right_lane = np.random.normal(0.5, bias_right_lane_sigma)
+            bias_right_lane = np.clip(bias_right_lane, 0, 1)
             minimal_overtake_distance = 2.0  # TODO stochastic?
 
             car = Car(self.next_id(), self, pos, vel, max_speed,
