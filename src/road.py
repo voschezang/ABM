@@ -11,7 +11,7 @@ class Direction(IntEnum):
     R = +1
 
 
-# tuple for storing neighbours.
+# tuple to store neighbours.
 # f -- front
 # b -- back
 # l -- left
@@ -31,10 +31,12 @@ class Road(ContinuousSpace):
         self.n_lanes = n_lanes
         self.lane_width = lane_width
 
+    # override
     def place_agent(self, agent, pos):
         super().place_agent(agent, pos)
         agent.lane = self.lane_at(pos)
 
+    # override
     def move_agent(self, agent, pos):
         super().move_agent(agent, pos)
         agent.lane = self.lane_at(pos)
@@ -115,7 +117,7 @@ class Road(ContinuousSpace):
 
         return Neighbours(*cars_l, *dists_l, *cars, *dists, *cars_r, *dists_r)
 
-    def try_change_lanes(self, car, vel, neighbours, directions=[Direction.R]):
+    def steer_to_lane(self, car, vel, neighbours, directions=[Direction.R]):
         # TODO
         # compute the velocity required to steer a car to another lane
         # returns a tuple (success: bool, vel: (int,int) )
@@ -146,6 +148,7 @@ class Road(ContinuousSpace):
         return False
 
     def steer(self, vel, direction):
+        # TODO use rotation matrix to force preservation of momentum (velocity)
         vel[1] = direction * self.lane_width / self.model.lane_change_time
         return vel
  

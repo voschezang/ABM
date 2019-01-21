@@ -54,7 +54,7 @@ def car_portrayal(agent):
     }
 
 
-car_canvas = SimpleCanvas(car_portrayal, 500, 200)
+car_canvas = SimpleCanvas(car_portrayal, 800, 200)
 
 chart = ChartModule(
     [{

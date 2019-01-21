@@ -1,11 +1,24 @@
 import numpy as np
 import collections
-
+import enum
 from mesa import Agent
 
 import src.util as util
-
 from .road import Direction
+
+
+class Action(enum.Enum):
+    """ Agent actions
+    center -- reset to center of lane
+    right -- go to the right-most lane
+    overtake -- overtake either the left or right car
+    """
+    center = enum.auto()
+    right = enum.auto()
+    overtake = enum.auto()
+
+
+# Action = Enum('Action', 'center right overtake')
 
 
 class Car(Agent):
@@ -22,6 +35,7 @@ class Car(Agent):
         max_speed -- in m/s.
         bias_right_lane -- bias to move to the right-hand lane in range [0,1].
         minimal_overtake_distance -- in time units.
+        action -- the current action
         """
 
         super().__init__(unique_id, model)
@@ -31,6 +45,7 @@ class Car(Agent):
         self.bias_right_lane = bias_right_lane
         self.minimal_overtake_distance = minimal_overtake_distance
         self.lane = None
+        self.action = Action.center
 
     def step(self):
         self.update_vel_next()
@@ -60,21 +75,13 @@ class Car(Agent):
         neighbours = self.model.space.all_neighbours(self)
 
         # if car in front
-        if neighbours.f and self.needs_to_brake(
-                vel_next, neighbours.f_d - self.model.car_length):
-            if not self.model.space.is_right_of_center_of_lane(
-                    self.pos):  # i.e. in the middle or left
-                if self.unique_id == 1:
-                    print(self.unique_id, "try left")
-                success, vel_next = self.model.space.try_change_lanes(
-                    self, vel_next, neighbours, [Direction.L, Direction.R])
+        if neighbours.f and (self.needs_to_brake(
+                vel_next, neighbours.f_d - self.model.car_length)):
+            success, vel_next = self.can_overtake(vel_next, neighbours)
+            if success:
+                self.action = Action.overtake
             else:
-                if self.unique_id == 1:
-                    print(self.unique_id, "try right")
-                success, vel_next = self.model.space.try_change_lanes(
-                    self, vel_next, neighbours, [Direction.R, Direction.L])
-
-            if not success:
+                self.action = Action.center
                 if self.unique_id == 1:
                     print(self.unique_id, "brake")
                 vel_next = self.model.space.center_on_current_lane(
@@ -84,17 +91,24 @@ class Car(Agent):
 
         # no car in front
         else:
-            if self.random.random() < self.bias_right_lane:
+            self.possibly_reset_action()
+            if self.action == Action.right or \
+               self.random.random() < self.bias_right_lane:
+                # TODO scale probability with dt
                 if self.unique_id == 1:
                     print(self.unique_id, "try right bias")
-                succes, vel_next = self.model.space.try_change_lanes(
+                success, vel_next = self.model.space.steer_to_lane(
                     self, vel_next, neighbours, [Direction.R])
-                if not succes:
+                if success:
+                    self.action = Action.right
+                else:
+                    self.action = Action.center
                     vel_next = self.model.space.center_on_current_lane(
                         self.pos, vel_next)
                     if self.unique_id == 1:
                         print(self.unique_id, "center 1")
             else:
+                self.action = Action.center
                 if self.unique_id == 1:
                     print(self.unique_id, "center 2")
                 vel_next = self.model.space.center_on_current_lane(
@@ -105,7 +119,7 @@ class Car(Agent):
             self.random_slow_down(vel_next)
 
         # clip negative velocities to zero
-        vel_next[0] = max(vel_next[0], 0)
+        vel_next[0] = max(0, vel_next[0])
 
         self.vel_next = vel_next
 
@@ -128,8 +142,7 @@ class Car(Agent):
         return vel
 
     def will_randomly_slow_down(self):
-        return (self.random.random() <
-                self.model.p_slowdown / 3600 * self.model.time_step)
+        return self.random.random() < self.model.p_slowdown
 
     def random_slow_down(self, vel):
         vel[0] -= self.model.car_dec * self.model.time_step
@@ -146,3 +159,29 @@ class Car(Agent):
         rotation_matrix = np.array([[cos, -sin], [sin, cos]])
         vel = rotation_matrix @ vel
         return vel
+
+    def can_overtake(self, vel_next, neighbours):
+        # Returns a tuple (success: bool, required_vel: [int,int] )
+        if not self.model.space.is_right_of_center_of_lane(
+                self.pos):  # i.e. in the middle or left
+            if self.unique_id == 1:
+                print(self.unique_id, "try left")
+            success, vel_next = self.model.space.steer_to_lane(
+                self, vel_next, neighbours, [Direction.L, Direction.R])
+        else:
+            if self.unique_id == 1:
+                print(self.unique_id, "try right")
+            success, vel_next = self.model.space.steer_to_lane(
+                self, vel_next, neighbours, [Direction.R, Direction.L])
+        return (success, vel_next)
+
+    def possibly_reset_action(self):
+        """ Reset the field `action` by chance iff current action = 'right'
+        """
+        if self.action == Action.right:
+            if random.random(
+            ) < 1 / self.bias_right_lane_seconds * self.model.time_step:
+                self.reset_action()
+
+    def reset_action(self):
+        self.action = Action.center
