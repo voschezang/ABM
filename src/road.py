@@ -22,6 +22,7 @@ Neighbours = namedtuple("Neighbours", [
     "f_r_d", "b_r_d"
 ])
 
+
 class Road(ContinuousSpace):
     def __init__(self, model, length, n_lanes, lane_width, torus):
         super().__init__(length, n_lanes * lane_width, torus)
@@ -69,7 +70,7 @@ class Road(ContinuousSpace):
         ]
 
     def distance(self, a, b, forward=True):
-        """Returns forward/backward distance from a to b
+        """Returns forward/backward distance in meter from a to b
 
         Note
         ----
@@ -85,7 +86,7 @@ class Road(ContinuousSpace):
         return d
 
     def neighbours(self, car, lane=None):
-        """Get the first car in a lane in front and back, and the distance to them (if they exist).
+        """Get the first car in a lane in front and back, and the absolute distances to them if they exist (with -1 as default).
 
         Parameters
         ----------
@@ -97,12 +98,18 @@ class Road(ContinuousSpace):
         """
         cars = [None, None]
         distances = [-1, -1]
-        for x in self.cars_in_lane(
-                lane if lane != None else car.lane, exclude=car):
+        for other_car in self.cars_in_lane(
+                lane if not lane is None else car.lane, exclude=car):
             for i, forward in enumerate([True, False]):
-                d = self.distance(car, x, forward)
-                if d > 0 and (cars[i] == None or d < distances[i]):
-                    cars[i] = x
+                if car:
+                    d = self.distance(car, other_car, forward)
+                else:
+                    # assume the car is not (yet) placed
+                    # TODO ignore backward search
+                    # TODO distance in s (2)
+                    d = other_car.pos[0]
+                if d > 0 and (cars[i] is None or d < distances[i]):
+                    cars[i] = other_car
                     distances[i] = d
 
         return cars, distances
@@ -151,7 +158,7 @@ class Road(ContinuousSpace):
         # TODO use rotation matrix to force preservation of momentum (velocity)
         vel[1] = direction * self.lane_width / self.model.lane_change_time
         return vel
- 
+
     def center_on_current_lane(self, pos, vel):
         d = self.distance_from_center_of_lane(pos)
         direction = Direction.L if self.is_right_of_center_of_lane(
@@ -161,6 +168,12 @@ class Road(ContinuousSpace):
         if direction * (vel[1] * self.model.time_step + d) > 0:
             vel[1] = vel[1] * self.model.time_step + d
         return vel
+
+    def relative_distance_from_to(self, a, b, dimension=0):
+        # relative distance from Agent a to Agent b (in 1 dimension)
+        distance_abs = a.pos[dimension] - b.pos[dimension]
+        return util.distance_in_seconds(distance_abs, a.vel[dimension],
+                                        b.vel[dimension])
 
     def relative_distance_from_to(self, a, b, dimension=0):
         # relative distance from Agent a to Agent b (in 1 dimension)

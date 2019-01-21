@@ -21,7 +21,7 @@ model_params = {
                           1, Model.MAX_LANES, 1),
     "flow":
     UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Flow per lane per second", 1, 0, 5, 0.1),
+                          "Flow per lane per second", .6, 0, 1, 0.05),
     "max_speed":
     UserSettableParameter(UserSettableParameter.SLIDER, "Maximum speed (km/h)",
                           120, 1, 150, 10),

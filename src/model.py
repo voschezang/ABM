@@ -38,7 +38,7 @@ class Model(mesa.Model):
         np.random.seed()
 
         self.time_step = time_step
-        self.flow = self.probability_per(3 * n_lanes, seconds=1)
+        self.flow = self.probability_per(flow * n_lanes, seconds=1)
         self.max_speed = max_speed / 3.6
         self.car_length = car_length
         self.min_spacing = min_spacing
@@ -61,52 +61,51 @@ class Model(mesa.Model):
             "Density": data.density,
             "Flow": data.flow
         })
+        self.v = 1  # verbose lvl
 
     def step(self):
+        self.generate_cars()
+        self.generate_cars()
         self.generate_cars()
         self.schedule.step()
         self.data_collector.collect(self)
 
-    def make_agents(self):
-        """Create self.n_cars number of agents and add them to the model (space, schedule)"""
-
-        for i in range(self.n_cars):
-            x = self.random.random() * self.space.length
-            y = self.space.center_of_lane(
-                self.random.randint(0, self.space.n_lanes - 1))
-            pos = (x, y)
-            vel = (self.max_speed, 0)
-            max_speed = np.random.normal(self.max_speed
-                                         if i == 0 else self.max_speed / 3, 5)
-            bias_right_lane = 1.0  # TODO stochastic?
-            minimal_overtake_distance = 2.0  # TODO stochastic?
-
-            car = Car(self.next_id(), self, pos, vel, max_speed,
-                      bias_right_lane, minimal_overtake_distance)
-
-            self.space.place_agent(car, car.pos)
-            self.schedule.add(car)
-
     def generate_cars(self):
         if self.random.random() < self.flow:
-            x = 0  # self.random.random() * self.space.length
-            y = self.space.center_of_lane(
-                self.random.randint(0, self.space.n_lanes - 1))
-            pos = (x, y)
-            max_speed_sigma = 5
-            max_speed = self.stochastic_params(
-                self.max_speed, max_speed_sigma, seconds=None)
-            vel = np.array([self.max_speed, 0])
-            # bias to go to the right lane (probability based, per minute)
-            bias_right_lane = self.stochastic_params(
-                0.5, sigma=3, seconds=Model.BIAS_RIGHT_LANE_SECONDS)
-            minimal_overtake_distance = 2.0  # TODO stochastic?
+            self.generate_car()
 
+    def generate_car(self):
+        max_speed_sigma = 5
+        max_speed = self.stochastic_params(
+            self.max_speed, max_speed_sigma, seconds=None)
+        vel = np.array([self.max_speed, 0])
+        # bias to go to the right lane (probability based, per minute)
+        bias_right_lane = self.stochastic_params(
+            0.5, sigma=3, seconds=Model.BIAS_RIGHT_LANE_SECONDS)
+        minimal_overtake_distance = 2.0  # TODO stochastic?
+        try:
+            pos = self.generate_car_position(vel)
+            print('pos', pos)
             car = Car(self.next_id(), self, pos, vel, max_speed,
                       bias_right_lane, minimal_overtake_distance)
 
             self.space.place_agent(car, car.pos)
             self.schedule.add(car)
+        except UserWarning as e:
+            if self.v: print(e)
+
+    def generate_car_position(self, vel, x=0):
+        # randomly iterate all lanes until an empty slot is found
+        for lane_index in np.random.permutation(self.space.n_lanes):
+            x = 0
+            y = (lane_index + 0.5) * self.space.lane_width
+            (other_car, _), (distance, _) = self.space.neighbours(
+                None, lane=lane_index)
+            # util.distance_in_seconds(distance, vel[0], other_car.vel[0])
+            if distance < self.min_spacing:
+                # TODO distance in s
+                return (x, y)
+        raise UserWarning('Cannot generate new car')
 
     def delay_time_to_probability(self, T=0):
         """Return the probability required to simulate a delay in communication
@@ -136,4 +135,4 @@ class Model(mesa.Model):
     def probability_to_reset_bias_right_lane(self):
         # frequency = 1 / number of seconds
         # probability = frequency
-        return 1 / BIAS_RIGHT_LANE_SECONDS * self.model.time_step
+        return 1 / Model.BIAS_RIGHT_LANE_SECONDS * self.time_step
