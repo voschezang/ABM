@@ -97,8 +97,8 @@ class Car(Agent):
 
         # no car in front
         else:
-            # TODO reset action after x timesteps
-            if self.action == Action.center or \
+            self.possibly_reset_action()
+            if self.action == Action.right or \
                self.random.random() < self.bias_right_lane:
                 # TODO scale probability with dt
                 if self.unique_id == 1:
@@ -153,3 +153,14 @@ class Car(Agent):
     def random_slow_down(self, vel):
         vel[0] -= self.model.car_acc_neg * self.model.time_step
         return vel
+
+    def possibly_reset_action(self):
+        """ Reset the field `action` by chance iff current action = 'right'
+        """
+        if self.action == Action.right:
+            if random.random(
+            ) < 1 / self.bias_right_lane_seconds * self.model.time_step:
+                self.reset_action()
+
+    def reset_action(self):
+        self.action = Action.center

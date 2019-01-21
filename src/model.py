@@ -54,6 +54,7 @@ class MyModel(Model):
         self.car_acc_neg = car_acc_neg
         self.p_slowdown = self.probability_per(p_slowdown, seconds=3600)
         self.lane_change_time = 2  # TODO use rotation matrix
+        self.bias_right_lane_seconds = 60
 
         self.space = Road(self, length, n_lanes, lane_width, torus=True)
 
@@ -86,7 +87,8 @@ class MyModel(Model):
                 self.max_speed, max_speed_sigma, seconds=None)
             vel = np.array([self.max_speed, 0])
             # bias to go to the right lane (probability based, per minute)
-            bias_right_lane = self.stochastic_params(0.5, sigma=3, seconds=60)
+            bias_right_lane = self.stochastic_params(
+                0.5, sigma=3, seconds=bias_right_lane_seconds)
             minimal_overtake_distance = 2.0  # TODO stochastic?
 
             car = Car(self.next_id(), self, pos, vel, max_speed,
