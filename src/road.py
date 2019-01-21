@@ -146,6 +146,7 @@ class Road(ContinuousSpace):
         return False
 
     def steer(self, vel, direction):
+        # TODO use rotation matrix to force preservation of momentum (velocity)
         vel[1] = direction * self.lane_width / self.model.lane_change_time
         return vel
 
