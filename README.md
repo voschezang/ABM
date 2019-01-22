@@ -8,8 +8,8 @@ Papers zoeken:
 - self-organization, critical point (voor complex system)
 
 Code:
-- randomly generating cars (no torus world)
 - collecting data, statistics (e.g. aantal kilometer-uur file)
+- distance in seconds (meters): incl _and_ excl other_car.vel
 
 
 ## Basic agent rules
