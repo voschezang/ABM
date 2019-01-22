@@ -10,6 +10,7 @@ Papers zoeken:
 Code:
 - collecting data, statistics (e.g. aantal kilometer-uur file)
 - distance in seconds (meters): incl _and_ excl other_car.vel
+- sensitivity analysis
 
 
 ## Basic agent rules
