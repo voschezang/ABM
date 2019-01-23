@@ -16,18 +16,31 @@ Papers zoeken:
 
 ## Params
 
+
 length -- length of the road in meters.
+
 lane_width -- width of a lane in meters.
+
 n_lanes -- number of lanes.
+
 flow -- number of cars generated per lane per second (stochastic)
+
 max_speed -- maximum speed cars will try to travel at in km/h (will be converted to m/s).
+
 car_length -- length of each car.
+
 min_spacing -- the minimum distance in seconds a car keeps from other cars (front to back). Incorporating the cars' velocity but ignoring the other cars' velocity
+
 min_distance_mu -- the mean of the mean min-distance for each car. Min-distance is the min. preferred amount of seconds that a car would want to keep from other cars (incl the other car's velocity). A relative distance of x seconds means that an car will reach another car in x seconds.
+
 min_distance_sigma -- the standard deviation of the min-distance for each car
+
 car_acc -- acceleration of the cars (in m\s2).
+
 car_dec -- deceleration of the cars (in m\s2).
+
 p_slowdown -- probability of a car slowing down per hour.
+
 time_step -- in seconds.
 
 
