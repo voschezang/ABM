@@ -3,16 +3,14 @@ ABM project course
 https://docs.google.com/document/d/1eFtdlH49CX-1uuGwS9rvptri8tylCG4f30oYA8jWjRM/edit
 
 ## TODO
-Papers zoeken
+Papers zoeken:
 - [Nagel-Schreckenberg](https://en.wikipedia.org/wiki/Nagel%E2%80%93Schreckenberg_model)
- - andere cars
-- self-organization
-- critical point (voor complex system)
+- self-organization, critical point (voor complex system)
 
-Code
-- discrete/continu van baan wisselen
-- randomly generating cars
+Code:
 - collecting data, statistics (e.g. aantal kilometer-uur file)
+- distance in seconds (meters): incl _and_ excl other_car.vel
+- sensitivity analysis
 
 
 ## Basic agent rules
