@@ -21,7 +21,7 @@ model_params = {
                           1, Model.MAX_LANES, 1),
     "flow":
     UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Flow per lane per second", .6, 0, 3, 0.05),
+                          "Flow (per lane per second)", .6, 0, 3, 0.05),
     "max_speed":
     UserSettableParameter(UserSettableParameter.SLIDER, "Maximum speed (km/h)",
                           120, 1, 150, 10),
@@ -32,7 +32,7 @@ model_params = {
                           "Minimum spacing between cars (s)", 1, 0, 3, 0.5),
     "p_slowdown":
     UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Probability of slowing down", 0.2, 0, 1, 0.1),
+                          "Frequency of a car slowing down randomly (per hour)", 60, 0, 100, 1),
     "time_step":
     0.1
 }

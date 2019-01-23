@@ -22,8 +22,8 @@ class Model(mesa.Model):
                  max_speed=10,
                  car_length=2,
                  min_spacing=1,
-                 min_distance_mu=2,
-                 min_distance_sigma=0.5,
+                 min_distance_mu=0,
+                 min_distance_sigma=0,
                  car_acc=3,
                  car_dec=6,
                  p_slowdown=0.1,
@@ -97,9 +97,9 @@ class Model(mesa.Model):
             self.generate_car()
 
     def generate_car(self,
-                     max_speed_sigma=3,
-                     bias_right_lane=0.5,
-                     bias_right_lane_sigma=3,
+                     max_speed_sigma=10,
+                     bias_right_lane=1, # TODO change parameter
+                     bias_right_lane_sigma=0,
                      x=0):
         vel = np.array([self.max_speed, 0])
         max_speed = self.stochastic_params(
@@ -160,12 +160,14 @@ class Model(mesa.Model):
         return p
 
     def probability_per(self, p, seconds=60):
+        """Returns the probability of something happening in a timestep, based on a chance per `seconds`."""
         # note that this limits the amount of timesteps
         if p == 0:
             return 0
         # the probability per second should exceed the time step length
         assert (seconds >= self.time_step)
         return p * self.time_step / seconds
+
 
     def probability_to_reset_bias_right_lane(self):
         # frequency = 1 / number of seconds

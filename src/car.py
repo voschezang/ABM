@@ -9,18 +9,6 @@ from .road import Direction
 
 # TODO vision in seconds? or min_distance-backward in seconds?
 
-
-class Action(enum.Enum):
-    """ Agent actions
-    center -- reset to center of lane
-    right -- go to the right-most lane
-    overtake -- overtake either the left or right car
-    """
-    center = enum.auto()
-    right = enum.auto()
-    overtake = enum.auto()
-
-
 class CarInFront(enum.Enum):
     """
     min_spacing has priority over min_relative_distance because it assumes the worst case
@@ -44,7 +32,6 @@ class Car(Agent):
         max_speed -- in m/s.
         bias_right_lane -- bias to move to the right-hand lane in range [0,1].
         minimal_overtake_distance -- in time units.
-        action -- the current action
         """
 
         super().__init__(unique_id, model)
@@ -54,7 +41,7 @@ class Car(Agent):
         self.bias_right_lane = bias_right_lane
         self.min_distance = min_distance
         self.lane = None
-        self.action = Action.center
+        self.target_lane = None
 
     def step(self):
         self.update_vel_next()
@@ -75,53 +62,61 @@ class Car(Agent):
     def update_vel_next(self):
         """update the property `vel_next`: the intended velocity of agent based of the current state."""
 
-        ### 1. accelerate if not maximum speed
+        ### accelerate if not maximum speed
         vel_next = self.accelerate_vel(self.vel.copy())
 
-        ### 2. prevent collision with other cars
+        ### get the neighbours surrounding the current car
         neighbours = self.model.space.all_neighbours(self)
 
-        ### 2. car in front
+        ### check if current car would need to brake, because there is a car in front
         needs_to_brake = self.needs_to_brake(vel_next, neighbours.f_d,
                                              neighbours.f)
-        if needs_to_brake == CarInFront.no:
-            self.possibly_reset_action()
-            if self.action == Action.right or \
-               self.random.random() < self.bias_right_lane:
-                # TODO scale probability with dt
-                if self.model.verbose > 2 and self.unique_id == 1:
-                    print(self.unique_id, "try right bias")
-                success, vel_next = self.model.space.steer_to_lane(
-                    self, vel_next, neighbours, [Direction.R])
-                if success:
-                    self.action = Action.right
-                else:
-                    self.action = Action.center
-                    vel_next = self.model.space.center_on_current_lane(
-                        self.pos, vel_next)
-                    if self.model.verbose > 2 and self.unique_id == 1:
-                        print(self.unique_id, "center 1")
-            else:
-                self.action = Action.center
-                if self.model.verbose > 2 and self.unique_id == 1:
-                    print(self.unique_id, "center 2")
-                vel_next = self.model.space.center_on_current_lane(
-                    self.pos, vel_next)
 
-        else:
-            success, vel_next = self.can_overtake(vel_next, neighbours)
-            if success:
-                self.action = Action.overtake
-            else:
-                if self.model.verbose > 2 and self.unique_id == 1:
-                    print(self.unique_id, "brake")
+        ### lane-chaning and braking logic
+
+        # if not chaning lane
+        if self.target_lane == None:
+
+            # if no need to brake
+            if needs_to_brake == CarInFront.no:
+                # go to right lane (if possible) with a certain probability (bias)
+                if self.random.random() < self.bias_right_lane:
+                    _, vel_next = self.try_steer_to_lane(
+                        vel_next, neighbours, self.lane + Direction.R)
+            
+            # if needs to brake
+            if needs_to_brake != CarInFront.no:
+                # try overtaking
+                success, vel_next = self.try_steer_to_lane(
+                        vel_next, neighbours, self.lane + Direction.L)
+                if not success:
+                    vel_next = self.brake(needs_to_brake, vel_next, neighbours.f_d,
+                                          neighbours.f)
+
+        # if changing lane and on target_lane
+        elif self.lane == self.target_lane:
+            vel_next = self.center_on_current_lane(vel_next)
+
+            # if needs to brake
+            if needs_to_brake != CarInFront.no:
                 vel_next = self.brake(needs_to_brake, vel_next, neighbours.f_d,
                                       neighbours.f)
-                vel_next = self.model.space.center_on_current_lane(
-                    self.pos, vel_next)
-                self.action = Action.center
+        
+        # if changing lane and not on target_lane
+        else:
+            success, vel_next = self.try_steer_to_lane(
+                vel_next, neighbours, self.target_lane)
+            if not success:
+                self.target_lane = self.lane
+                vel_next = self.center_on_current_lane(vel_next)
 
-        ### 3. randomly slow down
+            # if needs to brake
+            if needs_to_brake != CarInFront.no:
+                vel_next = self.brake(needs_to_brake, vel_next, neighbours.f_d,
+                                      neighbours.f)
+
+
+        ### randomly slow down
         if self.will_randomly_slow_down():
             self.random_slow_down(vel_next)
 
@@ -146,7 +141,7 @@ class Car(Agent):
             return CarInFront.no
 
         distance_s = self.distance_s(distance_abs, vel)
-        if distance_s < self.model.min_spacing:
+        if distance_s < self.model.min_spacing + self.model.time_step:
             return CarInFront.min_spacing
 
         distance_rel_s = self.distance_rel_s(distance_abs, vel, other_car)
@@ -172,8 +167,8 @@ class Car(Agent):
         elif reason == CarInFront.min_spacing:
             # print(self.unique_id, '\t breaks for\t', other_car.unique_id,
             #       '\t (min spacing)')
-            distance_s = self.distance_s(distance_abs, vel)
-            vel[0] = self.vel[0] * 1 - self.model.car_dec * self.model.time_step
+            # keep `min_spacing` seconds distance
+            vel[0] = distance_abs / (self.model.time_step + self.model.min_spacing)
 
         elif reason == CarInFront.min_relative_distance:
             # print(self.unique_id, '\t breaks for\t', other_car.unique_id,
@@ -196,6 +191,46 @@ class Car(Agent):
         vel[0] -= self.model.car_dec * self.model.time_step
         return vel
 
+    @property
+    def length(self):
+        return self.model.car_length
+
+    def distance_s(self, distance_abs, vel):
+        # TODO use this function only once per step
+        return road.distance_in_seconds(distance_abs, vel)
+
+    def distance_rel_s(self, distance_abs, vel, other_car):
+        return road.distance_in_seconds(distance_abs, vel, other_car.vel)
+
+    def try_steer_to_lane(self, vel, neighbours, lane):
+        """Returns whether steering to lane was successful and the new velocity."""
+        if not self.model.space.lane_exists(lane):
+            return (False, vel)
+
+        # direction of the lane change (-1: left, 0: current, +1: right)
+        direction = lane - self.lane
+
+        # get the neighbours (f: front, b: back) in the target lane
+        f, b = neighbours.in_direction(direction)
+        f_d, b_d = neighbours.distances(direction)
+
+        # check if there is space for overtaking
+        if not f or f_d > vel[0] * (
+                self.model.time_step + self.model.min_spacing):
+            if not b or b_d > b.vel[0] * (
+                    self.model.time_step + self.model.min_spacing):
+                movement_direction = Direction.L if self.pos[1] > self.model.space.center_of_lane(lane) else Direction.R
+                vel = self.steer(vel, movement_direction)
+                self.target_lane = lane
+                return (True, vel)
+
+        return (False, vel)
+
+    def steer(self, vel, direction):
+        """Steer in the specified direction, such that a complete lane-change can be performed in `lane_change_time`"""
+        vel[1] = direction * self.model.space.lane_width / self.model.lane_change_time
+        return vel
+
     # def steer(self, vel, degrees):
     #     """Rotate the velocity vector with a number of degrees."""
     #     # example:
@@ -208,38 +243,18 @@ class Car(Agent):
     #     vel = rotation_matrix @ vel
     #     return vel
 
-    def can_overtake(self, vel_next, neighbours):
-        # Returns a tuple (success: bool, required_vel: [int,int] )
-        if not self.model.space.is_right_of_center_of_lane(
-                self.pos):  # i.e. in the middle or left
-            if self.model.verbose > 2 and self.unique_id == 1:
-                print(self.unique_id, "try left")
-            success, vel_next = self.model.space.steer_to_lane(
-                self, vel_next, neighbours, [Direction.L, Direction.R])
-        else:
-            if self.model.verbose > 2 and self.unique_id == 1:
-                print(self.unique_id, "try right")
-            success, vel_next = self.model.space.steer_to_lane(
-                self, vel_next, neighbours, [Direction.R, Direction.L])
-        return (success, vel_next)
+    def center_on_current_lane(self, vel):
+        d = self.model.space.distance_from_center_of_lane(self.pos)
+        direction = Direction.L if self.model.space.is_right_of_center_of_lane(
+            self.pos) else Direction.R
+        vel = self.steer(vel, direction)
 
-    def possibly_reset_action(self):
-        """ Reset the field `action` by chance iff current action = 'right'
-        """
-        if self.action == Action.right:
-            if self.random.random(
-            ) < self.model.probability_to_reset_bias_right_lane():
-                self.reset_action()
-
-    def reset_action(self):
-        self.action = Action.center
-
-    def length(self):
-        return self.model.car_length
-
-    def distance_s(self, distance_abs, vel):
-        # TODO use this function only once per step
-        return road.distance_in_seconds(distance_abs, vel)
-
-    def distance_rel_s(self, distance_abs, vel, other_car):
-        return road.distance_in_seconds(distance_abs, vel, other_car.vel)
+        # check if moving in direction of the center, would result in overshooting
+        if direction * (vel[1] * self.model.time_step + d) >= 0:
+            # center the car in the lane
+            self.pos[1] = self.model.space.center_of_lane(self.lane) # TODO setting the position might seem a bit dangerous, 
+            # but this is okay for now since the y-pos of this car will not be referenced by other cars.
+            vel[1] = 0
+            self.target_lane = None
+            return vel
+        return vel
