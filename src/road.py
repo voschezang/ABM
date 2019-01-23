@@ -109,6 +109,12 @@ class Road(ContinuousSpace):
             if car.lane == lane and car not in exclude
         ]
 
+    def first_car_in_lane(self, lane):
+        cars = self.cars_in_lane(lane)
+        if not cars:
+            return None
+        return min(cars, key= lambda car: car.pos[0])
+
     def neighbours(self, car, lane=None):
         """Get the first car in a lane in front and back, and the absolute distances (in m) to them if they exist (-1 as default).
         Note that the car_length is subtracted for cars in front of the agent
