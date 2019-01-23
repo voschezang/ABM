@@ -169,7 +169,6 @@ class Car(Agent):
         return distance_s < vision
 
     def brake(self, reason, vel, distance_abs, other_car):
-        print(self.unique_id, '\t breaks for\t', other_car.unique_id)
         if vel[0] <= 0:
             vel[0] = 0
             return vel
@@ -177,10 +176,15 @@ class Car(Agent):
         if reason == CarInFront.no:
             pass
         elif reason == CarInFront.min_spacing:
+            print(self.unique_id, '\t breaks for\t', other_car.unique_id,
+                  '\t (min spacing)')
             distance_s = self.distance_s(distance_abs, vel)
             vel[0] *= .5  # TODO
 
         elif reason == CarInFront.min_relative_distance:
+            print(self.unique_id, '\t breaks for\t', other_car.unique_id,
+                  '\t (min distance)')
+            print('\t d vel (int): %i - %i' % (self.vel[0], other_car.vel[0]))
             # vel[0] = distance / (self.model.time_step + self.model.min_spacing)
             distance_rel_s = road.distance_in_seconds(distance_abs, vel,
                                                       other_car.vel)

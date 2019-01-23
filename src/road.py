@@ -34,7 +34,7 @@ def distance_in_seconds(distance_abs, vel_self, vel_other=None):
         return 1e15
     if vel_other is None:
         return distance_abs / vel_self[0]
-    return distance_abs / (vel_self[0] - vel_other[0])
+    return distance_abs / (vel_other[0] - vel_self[0])
 
 
 class Road(ContinuousSpace):
@@ -114,7 +114,11 @@ class Road(ContinuousSpace):
                 lane if not lane is None else car.lane, exclude=car):
             for i, forward in enumerate([True, False]):
                 d = self.distance_between_objects(car, other_car)
-                if d > 0 and (cars[i] is None or d < distances[i]):
+                if (forward and d < 0) or (not forward and d > 0):
+                    continue
+                elif not forward:
+                    d *= -1
+                if d >= 0 and (cars[i] is None or d < distances[i]):
                     cars[i] = other_car
                     distances[i] = d
 
