@@ -23,16 +23,16 @@ class Model(mesa.Model):
                  flow=1,
                  max_speed_mu=10,
                  max_speed_sigma=3,
-                 car_length=2,
+                 car_length=5,
                  min_spacing=1,
-                 min_distance_mu=0,
+                 min_distance_mu=2,
                  min_distance_sigma=0,
                  car_acc=3,
                  car_dec=6,
                  p_slowdown=0.1,
-                 time_step=0.1,
                  bias_right_lane_mu=1,
                  bias_right_lane_sigma=0,
+                 time_step=0.1,
                  seed=None,
                  verbose=3):
         """Initialise the traffic model.
@@ -113,9 +113,7 @@ class Model(mesa.Model):
             self.max_speed_mu, self.max_speed_sigma, seconds=None)
         max_speed = np.clip(max_speed, self.max_speed_mu / 2, None)
 
-        # TODO forward, backward min distance
-        min_distance = self.stochastic_params(self.min_distance_mu,
-                                              self.min_distance_sigma)
+        min_distance = np.random.normal(self.min_distance_mu, self.min_distance_sigma)
         # bias to go to the right lane (probability based, per minute)
         bias_right_lane = self.stochastic_params(
             self.bias_right_lane_mu,

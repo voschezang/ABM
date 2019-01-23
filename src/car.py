@@ -196,7 +196,6 @@ class Car(Agent):
         return self.model.car_length
 
     def distance_s(self, distance_abs, vel):
-        # TODO use this function only once per step
         return road.distance_in_seconds(distance_abs, vel)
 
     def distance_rel_s(self, distance_abs, vel, other_car):
@@ -253,7 +252,7 @@ class Car(Agent):
         if direction * (vel[1] * self.model.time_step + d) >= 0:
             # center the car in the lane
             self.pos[1] = self.model.space.center_of_lane(self.lane) # TODO setting the position might seem a bit dangerous, 
-            # but this is okay for now since the y-pos of this car will not be referenced by other cars.
+            # but this is okay for now since the y-pos of this car will not be used by other cars.
             vel[1] = 0
             self.target_lane = None
             return vel
