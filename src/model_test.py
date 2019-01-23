@@ -36,27 +36,14 @@ class TestModel(unittest.TestCase):
 
     def run_stochastic_simulation(self, seed, n_t):
         print('\t next model')
-        model = Model(n_lanes=Model.MAX_LANES, seed=seed, verbose=1)
+        model = Model(n_lanes=3, seed=seed, verbose=1)
         for i in range(int(n_t)):
             model.step()
 
-    def test_stochastic_simulations(self, n_worlds=3, n_t=1e4):
+    def test_stochastic_simulations(self, n_worlds=3, n_t=1e3):
         print('run stochastic simulations')
         for seed in np.arange(n_worlds):
             self.run_stochastic_simulation(seed, n_t)
-
-    # ...
-
-    def test_isupper(self):
-        self.assertTrue('FOO'.isupper())
-        self.assertFalse('Foo'.isupper())
-
-    def test_split(self):
-        s = 'hello world'
-        self.assertEqual(s.split(), ['hello', 'world'])
-        # check that s.split fails when the separator is not a string
-        with self.assertRaises(TypeError):
-            s.split(2)
 
 
 if __name__ == '__main__':

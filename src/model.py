@@ -12,7 +12,7 @@ import src.data as data
 
 class Model(mesa.Model):
     MAX_LANES = 10
-    BIAS_RIGHT_LANE_SECONDS = 60
+    BIAS_RIGHT_LANE_SECONDS = 1
 
     def __init__(self,
                  length=1000,
@@ -22,8 +22,8 @@ class Model(mesa.Model):
                  max_speed=10,
                  car_length=2,
                  min_spacing=1,
-                 min_distance_mu=1,
-                 min_distance_sigma=0,
+                 min_distance_mu=2,
+                 min_distance_sigma=0.5,
                  car_acc=3,
                  car_dec=6,
                  p_slowdown=0.1,
@@ -123,7 +123,7 @@ class Model(mesa.Model):
             self.space.place_agent(car, car.pos)
             self.schedule.add(car)
         except UserWarning as e:
-            if self.verbose: print(e)
+            if self.verbose > 1: print(e)
 
     def set_car_position(self, car, x=0):
         # randomly iterate all lanes until an empty slot is found

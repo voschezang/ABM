@@ -128,10 +128,10 @@ class Car(Agent):
         # clip negative velocities to zero
         vel_next[0] = max(0, vel_next[0])
 
-        # TODO limit acc to car specs (2d?)
-        # vel_next =  np.clip(( vel_next - self.vel )/self.model.time_step, self.model.dec, self.model.acc)
+        # d_vel_max = self.vel[0] + self.model.car_acc * self.model.time_step
+        # d_vel_min = self.vel[0] * 1 - self.model.car_dec * self.model.time_step
+        # vel_next[0] = np.clip(vel_next[0], d_vel_min, d_vel_max)
         self.vel_next = vel_next
-        # print(self.unique_id, 'vel', vel_next)
 
     def accelerate_vel(self, vel):
         # returns accelerated vel, upper limited by the maximum speed
@@ -150,16 +150,13 @@ class Car(Agent):
 
         distance_s = self.distance_s(distance_abs, vel)
         if distance_s < self.model.min_spacing:
-            print('min spacing >')
             return CarInFront.min_spacing
 
         distance_rel_s = self.distance_rel_s(distance_abs, vel, other_car)
-        if distance_rel_s < self.min_distance:
+        if distance_rel_s >= 0 and distance_rel_s < self.min_distance:
             return CarInFront.min_relative_distance
 
         return CarInFront.no
-        # return (distance_s < self.model.min_spacing,
-        #         distance_rel_s < self.min_distance)
 
     def is_inside_vision_range(self, distance_abs, vel):
         # TODO use limited vision (in s) param
@@ -176,29 +173,23 @@ class Car(Agent):
         if reason == CarInFront.no:
             pass
         elif reason == CarInFront.min_spacing:
-            print(self.unique_id, '\t breaks for\t', other_car.unique_id,
-                  '\t (min spacing)')
+            # print(self.unique_id, '\t breaks for\t', other_car.unique_id,
+            #       '\t (min spacing)')
             distance_s = self.distance_s(distance_abs, vel)
-            vel[0] *= .5  # TODO
+            vel[0] = self.vel[0] * 1 - self.model.car_dec * self.model.time_step
 
         elif reason == CarInFront.min_relative_distance:
-            print(self.unique_id, '\t breaks for\t', other_car.unique_id,
-                  '\t (min distance)')
-            print('\t d vel (int): %i - %i' % (self.vel[0], other_car.vel[0]))
-            # vel[0] = distance / (self.model.time_step + self.model.min_spacing)
-            distance_rel_s = road.distance_in_seconds(distance_abs, vel,
-                                                      other_car.vel)
-            vel[0] *= .5
-            # TODO is geometric decelerate function allowed?
-            # d_vel_rel = (vel[0] - other_car.vel[0]) / vel[0]
-            # vel[0] *= d_vel_rel * self.model.time_step
-            # if d_vel_rel <= 0:
-            # vel[0] = 0
+            # print(self.unique_id, '\t breaks for\t', other_car.unique_id,
+            #       '\t (min distance)')
+            # print('\t d vel (int): %i - %i' % (self.vel[0], other_car.vel[0]))
+            distance_rel_s = self.distance_rel_s(distance_abs, vel, other_car)
+            assert (distance_rel_s > 0)
+            d_vel_rel = distance_rel_s / self.min_distance
+            d_vel = max(self.model.car_dec, d_vel_rel) * self.model.time_step
+            vel[0] = self.vel[0] * (1 - d_vel)
+            # print('vel: %f, rel vel: %f' % (vel[0],
+            #                                 d_vel_rel * self.model.time_step))
 
-        # n_time_steps = distance_rel_s * self.model.time_step
-        # assert (d_vel_rel >= 0)
-        # assert (n_time_steps > 0)
-        # vel[0] *= 1 - d_vel_rel / n_time_steps
         return vel
 
     def will_randomly_slow_down(self):

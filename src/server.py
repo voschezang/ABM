@@ -29,7 +29,7 @@ model_params = {
     car_length,
     "min_spacing":
     UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Minimum spacing between cars (s)", 2, 0, 3, 0.5),
+                          "Minimum spacing between cars (s)", 1, 0, 3, 0.5),
     "p_slowdown":
     UserSettableParameter(UserSettableParameter.SLIDER,
                           "Probability of slowing down", 0.2, 0, 1, 0.1),
