@@ -1,30 +1,33 @@
 import numpy as np
 
-from mesa import Model
-from mesa.space import ContinuousSpace
+import mesa
 from mesa.time import StagedActivation, RandomActivation
 from mesa.datacollection import DataCollector
 
 import src.util as util
 from .car import Car
 from .road import Road
-
-### datacollection functions
-
-
-def vel0(model):
-    """Velocity of car 0"""
-    return model.schedule.agents[0].vel[0]
+import src.data as data
 
 
-###
+class Model(mesa.Model):
+    MAX_LANES = 10
+    BIAS_RIGHT_LANE_SECONDS = 60
 
-
-class MyModel(Model):
-    max_lanes = 10
-
-    def __init__(self, length, lane_width, n_lanes, n_cars, max_speed,
-                 car_length, min_spacing, car_acc, p_slowdown, time_step):
+    def __init__(self,
+                 length=1,
+                 lane_width=1,
+                 n_lanes=1,
+                 flow=1,
+                 max_speed=10,
+                 car_length=2,
+                 min_spacing=1,
+                 car_acc=1,
+                 car_dec=2,
+                 p_slowdown=0,
+                 time_step=1,
+                 seed=None,
+                 verbose=3):
         """Initialise the traffic model.
 
         Parameters
@@ -32,57 +35,127 @@ class MyModel(Model):
         length -- length of the road.
         lane_width -- width of a lane.
         n_lanes -- number of lanes.
-        n_cars -- number of cars.
-        max_speed -- maximum speed cars can (and want to) travel at in km/h (is converted to m/s).
+        flow -- number of cars generated per lane per second (stochastic)
+        max_speed -- maximum speed cars can (and want to) travel at in km/h (will be converted to m/s).
         car_length -- length of each car.
         min_spacing -- the minimum distance cars keep from each other (bumper to bumper) in seconds.
-        car_acc -- acceleration of the cars.
-        p_slowdown -- probability of a car slowing down at random.
+        car_acc -- acceleration of the cars (in m\s2).
+        car_dec -- deceleration of the cars (in m\s2).
+        p_slowdown -- probability of a car slowing down per hour.
         time_step -- in seconds.
+        seed -- random seed to use (default `None`, results in time-based seed).
+        verbose -- verbosity level (`0` is silent).
         """
 
         super().__init__()
-        np.random.seed()
+        np.random.seed(seed)
+        self.reset_randomizer(seed)
+        self.verbose = verbose
 
-        self.n_cars = n_cars
+        self.time_step = time_step
+        self.flow = self.probability_per(flow * n_lanes, seconds=1)
         self.max_speed = max_speed / 3.6
         self.car_length = car_length
         self.min_spacing = min_spacing
         self.car_acc = car_acc
-        self.p_slowdown = p_slowdown
-        self.time_step = time_step
-        self.lane_change_time = 2
+        self.car_dec = car_dec
+        self.p_slowdown = self.probability_per(p_slowdown, seconds=3600)
+        self.lane_change_time = 2  # TODO use rotation matrix
 
-        self.space = Road(self, length, n_lanes, lane_width, torus=True)
+        self.space = Road(self, length, n_lanes, lane_width, torus=False)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
-        self.schedule = RandomActivation(self)
-        #self.schedule = StagedActivation(self, ["update_velocity", "move"], shuffle=False, shuffle_between_stages=False)
+        # self.schedule = RandomActivation(self)
+        self.schedule = StagedActivation(
+            self, ["update_vel_next", "move"],
+            shuffle=False,
+            shuffle_between_stages=False)
 
-        self.make_agents()
-
-        # create data collectors
-        self.data_collector = DataCollector(model_reporters={"Velocity": vel0})
+        self.data = data.Data()
+        self.data_collector = DataCollector(
+            model_reporters={
+                "Density": data.density,
+                "Flow":
+                data.flow  # TODO measuring the flow is maybe not necessary,
+                # since the flow rate is a parameter for the simulation,
+                # unless we want to measure the flow rate at another reference point
+            })
 
     def step(self):
-        self.data_collector.collect(self)
+        self.generate_cars()
         self.schedule.step()
+        self.data_collector.collect(self)
 
-    def make_agents(self):
-        """Create self.n_cars number of agents and add them to the model (space, schedule)"""
+    def generate_cars(self):
+        if self.random.random() < self.flow:
+            self.generate_car()
 
-        for i in range(self.n_cars):
-            x = self.random.random() * self.space.length
-            y = (self.random.randint(0, self.space.n_lanes - 1) + 0.5
-                 ) * self.space.lane_width
-            pos = (x, y)
-            vel = (self.max_speed, 0)
-            max_speed = np.random.normal(self.max_speed, 0)
-            bias_right_lane = 1  # TODO stochastic?
-            minimal_overtake_distance = 2  # TODO stochastic?
-
+    def generate_car(self,
+                     max_speed_sigma=5,
+                     bias_right_lane=0.5,
+                     bias_right_lane_sigma=3,
+                     minimal_overtake_distance=2.0):
+        max_speed = self.stochastic_params(
+            self.max_speed, max_speed_sigma, seconds=None)
+        vel = np.array([self.max_speed, 0])
+        # bias to go to the right lane (probability based, per minute)
+        bias_right_lane = self.stochastic_params(
+            bias_right_lane,
+            bias_right_lane_sigma,
+            seconds=Model.BIAS_RIGHT_LANE_SECONDS)
+        # TODO stochastic minimal_overtake_distance?
+        try:
+            pos = self.generate_car_position(vel)
             car = Car(self.next_id(), self, pos, vel, max_speed,
                       bias_right_lane, minimal_overtake_distance)
 
             self.space.place_agent(car, car.pos)
             self.schedule.add(car)
+        except UserWarning as e:
+            if self.verbose: print(e)
+
+    def generate_car_position(self, vel, x=0):
+        # randomly iterate all lanes until an empty slot is found
+        for lane_index in np.random.permutation(self.space.n_lanes):
+            x = 0
+            y = self.space.center_of_lane(lane_index)
+            (other_car, _), (distance, _) = self.space.neighbours(
+                None, lane=lane_index)
+            # util.distance_in_seconds(distance, vel[0], other_car.vel[0])
+            if distance < self.min_spacing:
+                # TODO distance in s
+                return (x, y)
+        raise UserWarning('Cannot generate new car')
+
+    def delay_time_to_probability(self, T=0):
+        """Return the probability required to simulate a delay in communication
+        used to simulate reaction time
+        T: period (interval time)
+        f = 1/T
+        """
+        T_in_time_steps = T / self.time_step
+        frequency = 1 / T_in_time_steps
+        probability = frequency
+        return probability
+
+    def stochastic_params(self, mean, sigma=1, pos=True, seconds=1):
+        # returns a stochastic parameter
+        p = np.random.normal(mean, sigma)
+        if pos:
+            p = np.clip(p, 0, None)
+        if seconds:
+            p = self.probability_per(p, seconds)
+        return p
+
+    def probability_per(self, p, seconds=60):
+        # note that this limits the amount of timesteps
+        if p == 0:
+            return 0
+        # the probability per second should exceed the time step length
+        assert (seconds >= self.time_step)
+        return p * self.time_step / seconds
+
+    def probability_to_reset_bias_right_lane(self):
+        # frequency = 1 / number of seconds
+        # probability = frequency
+        return 1 / Model.BIAS_RIGHT_LANE_SECONDS * self.time_step

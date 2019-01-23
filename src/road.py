@@ -2,11 +2,25 @@ import numpy as np
 from mesa.space import ContinuousSpace
 
 from enum import IntEnum
+from collections import namedtuple
 
 
 class Direction(IntEnum):
     L = -1
+    C = 0
     R = +1
+
+
+# tuple to store neighbours.
+# f -- front
+# b -- back
+# l -- left
+# r -- right
+# d -- distance
+Neighbours = namedtuple("Neighbours", [
+    "f_l", "b_l", "f_l_d", "b_l_d", "f", "b", "f_d", "b_d", "f_r", "b_r",
+    "f_r_d", "b_r_d"
+])
 
 
 class Road(ContinuousSpace):
@@ -18,72 +32,151 @@ class Road(ContinuousSpace):
         self.n_lanes = n_lanes
         self.lane_width = lane_width
 
-    def lane(self, car):
-        return int(car.pos[1] // self.lane_width)
+    # override
+    def place_agent(self, agent, pos):
+        super().place_agent(agent, pos)
+        agent.lane = self.lane_at(pos)
+
+    # override
+    def move_agent(self, agent, pos):
+        super().move_agent(agent, pos)
+        agent.lane = self.lane_at(pos)
 
     def lane_at(self, pos):
+        """Returns the lane number of a position"""
         return int(pos[1] // self.lane_width)
+
+    def lane_exists(self, lane):
+        return lane >= 0 and lane < self.n_lanes
 
     def distance_from_center_of_lane(self, pos):
         return pos[1] % self.lane_width - self.lane_width / 2
 
-    def is_left_of_center_of_lane(self, pos):
-        return self.distance_from_center_of_lane(pos) < 0
+    def is_right_of_center_of_lane(self, pos):
+        return self.distance_from_center_of_lane(pos) > 0
 
-    def cars_in_range(self, car, forward=True):
-        """Return a list with tuples (first car, distance) in the left, current and right lane."""
+    def center_of_lane(self, lane):
+        return (lane + 0.5) * self.lane_width
 
-        # get cars ahead within vision range of: max_speed + car_size + min_spacing
-        vision = self.model.max_speed + self.model.car_length + self.model.min_spacing * self.model.max_speed
+    def cars_in_lane(self, lane, exclude=[]):
+        """Returns all cars in a certain lane (optionally excluding some cars)"""
+        if not self.lane_exists(lane):
+            return []
+        if not isinstance(exclude, (list, tuple)):
+            exclude = [exclude]
+        return [
+            car for car in self._index_to_agent.values()
+            if car.lane == lane and car not in exclude
+        ]
 
-        # get the distances to each car
-        dists = self._agent_points - car.pos if forward else car.pos - self._agent_points
+    def distance(self, a, b, forward=True):
+        """Returns forward/backward distance in meter from a to b
+
+        Note
+        ----
+        returned distance does not include car size, so distance is center-to-center
+        """
+        d = b.pos[0] - a.pos[0]
+        if not forward:
+            d *= -1
+
         if self.torus:
-            for dist in dists:
-                if dist[0] < 0:
-                    dist[0] += self.length
+            if d < 0:
+                d += self.length
+        return d
 
-        # filter out cars outside of the vision range or more than one lane away
-        idxs = np.where(
-            np.all(
-                [
-                    dists[:, 0] > 0, dists[:, 0] < vision,
-                    np.abs(dists[:, 1]) < self.lane_width * 1.5
-                ],
-                axis=0))[0]
+    def neighbours(self, car, lane=None):
+        """Get the first car in a lane in front and back, and the absolute distances to them if they exist (with -1 as default).
 
-        # list for storing tuples of (closest car, distance) in the left, current and right lane
-        cars = [None, None, None]
+        Parameters
+        ----------
+        car -- to get the neighbours of.
+        lane -- in which to look for neighbours (if `None` uses the current lane of `car`).
+        Returns
+        -------
+        tuple ([car_front, car_back], [distance_front, distance_back]).
+        """
+        cars = [None, None]
+        distances = [-1, -1]
+        for other_car in self.cars_in_lane(
+                lane if not lane is None else car.lane, exclude=car):
+            for i, forward in enumerate([True, False]):
+                if car:
+                    d = self.distance(car, other_car, forward)
+                else:
+                    # assume the car is not (yet) placed
+                    # TODO ignore backward search
+                    # TODO distance in s (2)
+                    d = other_car.pos[0]
+                if d > 0 and (cars[i] is None or d < distances[i]):
+                    cars[i] = other_car
+                    distances[i] = d
 
-        # store the closest car for each lane (left, current, right)
-        lane = self.lane(car)
-        for i in idxs:
-            x = self._index_to_agent[i]
-            for j in range(3):
-                if x.lane == lane + j - 1:
-                    if cars[j] == None or dists[i, 0] < cars[j][1]:
-                        cars[j] = (x, dists[i, 0])
+        return cars, distances
 
-        return cars
+    def all_neighbours(self, car):
+        """Return all neighbours for a car"""
+        lanes = car.lane + np.array([-1, 0, 1])
 
-    def change_lane(self, car, lane):
-        car.pos[1] = (lane + 0.5) * self.lane_width
+        (cars_l, dists_l) = self.neighbours(car, car.lane - 1)
+        (cars, dists) = self.neighbours(car, car.lane)
+        (cars_r, dists_r) = self.neighbours(car, car.lane + 1)
 
-    def can_change_lane(self, car, target_lane, cars_front, cars_back):
-        """Returns whether there is room fo a car to change lane in direction (L/R)"""
+        return Neighbours(*cars_l, *dists_l, *cars, *dists, *cars_r, *dists_r)
 
-        # if target lane exists
-        if target_lane < 0 or target_lane >= self.n_lanes:
-            return False
+    def steer_to_lane(self, car, vel, neighbours, directions=[Direction.R]):
+        # TODO
+        # compute the velocity required to steer a car to another lane
+        # returns a tuple (success: bool, vel: (int,int) )
 
-        # index for getting cars in target_lane from cars_front/cars_back
-        i = (target_lane - car.lane) + 1
+        for direction in directions:
+            if not self.lane_exists(car.lane + direction):
+                continue
 
-        # check if there is space in front in the target lane
-        if not cars_front[i] or car.vel[0] * self.model.time_step < cars_front[i][1] - self.model.car_length - self.model.min_spacing * car.vel[0]:  # TODO check rule for looking forward
-            # check if there is space backwards in target lane
-            # TODO: incorporate car.minimal_overtake_distance
-            if not cars_back[i] or cars_back[i][0].vel[0] * self.model.time_step < cars_back[i][1] - self.model.car_length - self.model.min_spacing * cars_back[i][0].vel[0]:  # TODO change rule for checking backwards
+            if self.can_go_to_lane(vel, neighbours, direction):
+                vel = self.steer(vel, direction)
+                return (True, vel)
+        return (False, vel)
+
+    def can_go_to_lane(self, vel, neighbours, direction):
+        """Returns whether there is room fo a car (at pos, with vel) to change lane in direction (L/R)"""
+        f = neighbours.f_l if direction == Direction.L else neighbours.f_r
+        b = neighbours.b_l if direction == Direction.L else neighbours.b_r
+        f_d = (neighbours.f_l_d if direction == Direction.L else
+               neighbours.f_r_d) - self.model.car_length
+        b_d = (neighbours.b_l_d if direction == Direction.L else
+               neighbours.b_r_d) - self.model.car_length
+
+        if not f or f_d > vel[0] * (
+                self.model.time_step + self.model.min_spacing):
+            if not b or b_d > b.vel[0] * (
+                    self.model.time_step + self.model.min_spacing):
                 return True
-
         return False
+
+    def steer(self, vel, direction):
+        # TODO use rotation matrix to force preservation of momentum (velocity)
+        vel[1] = direction * self.lane_width / self.model.lane_change_time
+        return vel
+
+    def center_on_current_lane(self, pos, vel):
+        d = self.distance_from_center_of_lane(pos)
+        direction = Direction.L if self.is_right_of_center_of_lane(
+            pos) else Direction.R
+        vel = self.steer(vel, direction)
+
+        if direction * (vel[1] * self.model.time_step + d) > 0:
+            vel[1] = vel[1] * self.model.time_step + d
+        return vel
+
+    def relative_distance_from_to(self, a, b, dimension=0):
+        # relative distance from Agent a to Agent b (in 1 dimension)
+        distance_abs = a.pos[dimension] - b.pos[dimension]
+        return util.distance_in_seconds(distance_abs, a.vel[dimension],
+                                        b.vel[dimension])
+
+    def relative_distance_from_to(self, a, b, dimension=0):
+        # relative distance from Agent a to Agent b (in 1 dimension)
+        distance_abs = a.pos[dimension] - b.pos[dimension]
+        return util.distance_in_seconds(distance_abs, a.vel[dimension],
+                                        b.vel[dimension])

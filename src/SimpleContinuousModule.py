@@ -1,6 +1,7 @@
 from mesa.visualization.ModularVisualization import VisualizationElement
 
-from .model import MyModel
+from .model import Model
+
 
 class SimpleCanvas(VisualizationElement):
     local_includes = ["src/js/simple_continuous_canvas.js"]
@@ -27,8 +28,10 @@ class SimpleCanvas(VisualizationElement):
                  (model.space.y_max - model.space.y_min))
 
             # scale the y-axis such that a lane does not change it position if the number of lanes is changed
-            y = (MyModel.max_lanes - model.space.n_lanes) / MyModel.max_lanes + y * model.space.n_lanes / MyModel.max_lanes
- 
+            y = (
+                Model.MAX_LANES - model.space.n_lanes
+            ) / Model.MAX_LANES + y * model.space.n_lanes / Model.MAX_LANES
+
             portrayal["x"] = x
             portrayal["y"] = y
             space_state.append(portrayal)
