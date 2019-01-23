@@ -51,7 +51,7 @@ class Model(mesa.Model):
         np.random.seed(seed)
         self.reset_randomizer(seed)
         self.verbose = verbose
-    
+
         self.time_step = time_step
         self.flow = self.probability_per(flow * n_lanes, seconds=1)
         self.max_speed = max_speed / 3.6
@@ -72,13 +72,15 @@ class Model(mesa.Model):
             shuffle_between_stages=False)
 
         self.data = data.Data()
-        self.data_collector = DataCollector(model_reporters={
-            "Density": data.density,
-            "Flow": data.flow # TODO measuring the flow is maybe not necessary,
-            # since the flow rate is a parameter for the simulation,
-            # unless we want to measure the flow rate at another reference point 
-        })
-        
+        self.data_collector = DataCollector(
+            model_reporters={
+                "Density": data.density,
+                "Flow":
+                data.flow  # TODO measuring the flow is maybe not necessary,
+                # since the flow rate is a parameter for the simulation,
+                # unless we want to measure the flow rate at another reference point
+            })
+
     def step(self):
         self.generate_cars()
         self.schedule.step()
