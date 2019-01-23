@@ -4,7 +4,10 @@ import enum
 from mesa import Agent
 
 import src.util as util
+import src.road as road
 from .road import Direction
+
+# TODO vision in seconds? or min_distance-backward in seconds?
 
 
 class Action(enum.Enum):
@@ -18,12 +21,18 @@ class Action(enum.Enum):
     overtake = enum.auto()
 
 
-# Action = Enum('Action', 'center right overtake')
+class CarInFront(enum.Enum):
+    """
+    min_spacing has priority over min_relative_distance because it assumes the worst case
+    """
+    min_spacing = enum.auto()
+    min_relative_distance = enum.auto()
+    no = enum.auto()
 
 
 class Car(Agent):
     def __init__(self, unique_id, model, pos, vel, max_speed, bias_right_lane,
-                 minimal_overtake_distance):
+                 min_distance):
         """Create an agent that represents a car
 
         Parameters
@@ -43,7 +52,7 @@ class Car(Agent):
         self.vel = np.array(vel, dtype=float)
         self.max_speed = max_speed
         self.bias_right_lane = bias_right_lane
-        self.minimal_overtake_distance = minimal_overtake_distance
+        self.min_distance = min_distance
         self.lane = None
         self.action = Action.center
 
@@ -70,28 +79,12 @@ class Car(Agent):
         vel_next = self.accelerate_vel(self.vel.copy())
 
         ### 2. prevent collision with other cars
-        # TODO (optional) stop searching adjacent lanes when a blocking car is found
-        #   i.e. a reason that makes overtaking impossible
-        # We may have to simplify the interface, i.e. store cars per lane and simply iterate all cars in that lane, instead of searching in a radius
         neighbours = self.model.space.all_neighbours(self)
 
-        # if car in front
-        if neighbours.f and (self.needs_to_brake(
-                vel_next, neighbours.f_d - self.model.car_length)):
-            success, vel_next = self.can_overtake(vel_next, neighbours)
-            if success:
-                self.action = Action.overtake
-            else:
-                self.action = Action.center
-                if self.model.verbose > 2 and self.unique_id == 1:
-                    print(self.unique_id, "brake")
-                vel_next = self.model.space.center_on_current_lane(
-                    self.pos, vel_next)
-                vel_next = self.brake(vel_next,
-                                      neighbours.f_d - self.model.car_length)
-
-        # no car in front
-        else:
+        ### 2. car in front
+        needs_to_brake = self.needs_to_brake(vel_next, neighbours.f_d,
+                                             neighbours.f)
+        if needs_to_brake == CarInFront.no:
             self.possibly_reset_action()
             if self.action == Action.right or \
                self.random.random() < self.bias_right_lane:
@@ -115,6 +108,19 @@ class Car(Agent):
                 vel_next = self.model.space.center_on_current_lane(
                     self.pos, vel_next)
 
+        else:
+            success, vel_next = self.can_overtake(vel_next, neighbours)
+            if success:
+                self.action = Action.overtake
+            else:
+                if self.model.verbose > 2 and self.unique_id == 1:
+                    print(self.unique_id, "brake")
+                vel_next = self.brake(needs_to_brake, vel_next, neighbours.f_d,
+                                      neighbours.f)
+                vel_next = self.model.space.center_on_current_lane(
+                    self.pos, vel_next)
+                self.action = Action.center
+
         ### 3. randomly slow down
         if self.will_randomly_slow_down():
             self.random_slow_down(vel_next)
@@ -122,7 +128,10 @@ class Car(Agent):
         # clip negative velocities to zero
         vel_next[0] = max(0, vel_next[0])
 
+        # TODO limit acc to car specs (2d?)
+        # vel_next =  np.clip(( vel_next - self.vel )/self.model.time_step, self.model.dec, self.model.acc)
         self.vel_next = vel_next
+        # print(self.unique_id, 'vel', vel_next)
 
     def accelerate_vel(self, vel):
         # returns accelerated vel, upper limited by the maximum speed
@@ -130,16 +139,62 @@ class Car(Agent):
                      self.max_speed)
         return vel
 
-    def needs_to_brake(self, vel, distance):
-        """Returns if needs to brake in order to keep minimum spacing"""
+    def needs_to_brake(self, vel, distance_abs, other_car=None):
+        """Returns a value CarInFront
+        """
         # TODO use reaction time
-        return distance < vel[0] * (
-            self.model.time_step + self.model.min_spacing)
+        if other_car is None:
+            return CarInFront.no
+        if not self.is_inside_vision_range(distance_abs, vel):
+            return CarInFront.no
 
-    def brake(self, vel, distance):
-        # TODO distance in seconds
-        if self.needs_to_brake(vel, distance):
-            vel[0] = distance / (self.model.time_step + self.model.min_spacing)
+        distance_s = self.distance_s(distance_abs, vel)
+        if distance_s < self.model.min_spacing:
+            print('min spacing >')
+            return CarInFront.min_spacing
+
+        distance_rel_s = self.distance_rel_s(distance_abs, vel, other_car)
+        if distance_rel_s < self.min_distance:
+            return CarInFront.min_relative_distance
+
+        return CarInFront.no
+        # return (distance_s < self.model.min_spacing,
+        #         distance_rel_s < self.min_distance)
+
+    def is_inside_vision_range(self, distance_abs, vel):
+        # TODO use limited vision (in s) param
+        vision = 200
+        distance_s = road.distance_in_seconds(distance_abs, vel)
+        # distance_s = road.distance_in_seconds(distance_abs, -vel)
+        return distance_s < vision
+
+    def brake(self, reason, vel, distance_abs, other_car):
+        print(self.unique_id, '\t breaks for\t', other_car.unique_id)
+        if vel[0] <= 0:
+            vel[0] = 0
+            return vel
+
+        if reason == CarInFront.no:
+            pass
+        elif reason == CarInFront.min_spacing:
+            distance_s = self.distance_s(distance_abs, vel)
+            vel[0] *= .5  # TODO
+
+        elif reason == CarInFront.min_relative_distance:
+            # vel[0] = distance / (self.model.time_step + self.model.min_spacing)
+            distance_rel_s = road.distance_in_seconds(distance_abs, vel,
+                                                      other_car.vel)
+            vel[0] *= .5
+            # TODO is geometric decelerate function allowed?
+            # d_vel_rel = (vel[0] - other_car.vel[0]) / vel[0]
+            # vel[0] *= d_vel_rel * self.model.time_step
+            # if d_vel_rel <= 0:
+            # vel[0] = 0
+
+        # n_time_steps = distance_rel_s * self.model.time_step
+        # assert (d_vel_rel >= 0)
+        # assert (n_time_steps > 0)
+        # vel[0] *= 1 - d_vel_rel / n_time_steps
         return vel
 
     def will_randomly_slow_down(self):
@@ -149,17 +204,17 @@ class Car(Agent):
         vel[0] -= self.model.car_dec * self.model.time_step
         return vel
 
-    def steer(self, vel, degrees):
-        """Rotate the velocity vector with a number of degrees."""
-        # example:
-        # change lanes in 2 seconds, determine angle
-        # angle = ArcTan(3.5 / 2 / 33) = 3
-        angle = np.radians(degrees)
-        cos = np.cos(angle)
-        sin = np.sin(angle)
-        rotation_matrix = np.array([[cos, -sin], [sin, cos]])
-        vel = rotation_matrix @ vel
-        return vel
+    # def steer(self, vel, degrees):
+    #     """Rotate the velocity vector with a number of degrees."""
+    #     # example:
+    #     # change lanes in 2 seconds, determine angle
+    #     # angle = ArcTan(3.5 / 2 / 33) = 3
+    #     angle = np.radians(degrees)
+    #     cos = np.cos(angle)
+    #     sin = np.sin(angle)
+    #     rotation_matrix = np.array([[cos, -sin], [sin, cos]])
+    #     vel = rotation_matrix @ vel
+    #     return vel
 
     def can_overtake(self, vel_next, neighbours):
         # Returns a tuple (success: bool, required_vel: [int,int] )
@@ -186,3 +241,13 @@ class Car(Agent):
 
     def reset_action(self):
         self.action = Action.center
+
+    def length(self):
+        return self.model.car_length
+
+    def distance_s(self, distance_abs, vel):
+        # TODO use this function only once per step
+        return road.distance_in_seconds(distance_abs, vel)
+
+    def distance_rel_s(self, distance_abs, vel, other_car):
+        return road.distance_in_seconds(distance_abs, vel, other_car.vel)

@@ -1,21 +1,13 @@
 import numpy as np
 
 
-def kmh_to_ms(speed):
+def km_per_h_to_m_per_s(speed):
     return speed / 3.6
 
 
-def ms_to_kmh(speed):
+def m_per_s_to_km_per_h(speed):
     return speed * 3.6
 
 
-def distance_in_seconds(distance_abs, vel_self, vel_other):
-    """
-    distance_abs -- absolute distance
-    vel - tuple of velocity in x,y direction in seconds
-    """
-    if np.any(vel_self == 0):
-        return 1e15
-    # TODO choose to vel in km/h or m/s?
-    speed = np.linalg.norm(vel)
-    return distance_abs / (vel_self - vel_other)
+
+

@@ -5,8 +5,8 @@ from mesa.time import StagedActivation, RandomActivation
 from mesa.datacollection import DataCollector
 
 import src.util as util
+import src.road as road
 from .car import Car
-from .road import Road
 import src.data as data
 
 
@@ -15,30 +15,32 @@ class Model(mesa.Model):
     BIAS_RIGHT_LANE_SECONDS = 60
 
     def __init__(self,
-                 length=1,
+                 length=1000,
                  lane_width=1,
                  n_lanes=1,
                  flow=1,
                  max_speed=10,
                  car_length=2,
                  min_spacing=1,
-                 car_acc=1,
-                 car_dec=2,
-                 p_slowdown=0,
-                 time_step=1,
+                 min_distance_mu=0,
+                 min_distance_sigma=0,
+                 car_acc=3,
+                 car_dec=6,
+                 p_slowdown=0.1,
+                 time_step=0.1,
                  seed=None,
                  verbose=3):
         """Initialise the traffic model.
 
         Parameters
         ----------
-        length -- length of the road.
-        lane_width -- width of a lane.
+        length -- length of the road in meters.
+        lane_width -- width of a lane in meters.
         n_lanes -- number of lanes.
         flow -- number of cars generated per lane per second (stochastic)
-        max_speed -- maximum speed cars can (and want to) travel at in km/h (will be converted to m/s).
+        max_speed -- maximum speed cars will try to travel at in km/h (will be converted to m/s).
         car_length -- length of each car.
-        min_spacing -- the minimum distance cars keep from each other (bumper to bumper) in seconds.
+        min_spacing -- the minimum distance in seconds a car keeps from other cars (front to back). Incorporating the cars' velocity but ignoring the other cars' velocity
         car_acc -- acceleration of the cars (in m\s2).
         car_dec -- deceleration of the cars (in m\s2).
         p_slowdown -- probability of a car slowing down per hour.
@@ -51,18 +53,20 @@ class Model(mesa.Model):
         np.random.seed(seed)
         self.reset_randomizer(seed)
         self.verbose = verbose
-    
+
         self.time_step = time_step
         self.flow = self.probability_per(flow * n_lanes, seconds=1)
         self.max_speed = max_speed / 3.6
         self.car_length = car_length
         self.min_spacing = min_spacing
+        self.min_distance_mu = min_distance_mu
+        self.min_distance_sigma = min_distance_sigma
         self.car_acc = car_acc
         self.car_dec = car_dec
         self.p_slowdown = self.probability_per(p_slowdown, seconds=3600)
         self.lane_change_time = 2  # TODO use rotation matrix
 
-        self.space = Road(self, length, n_lanes, lane_width, torus=False)
+        self.space = road.Road(self, length, n_lanes, lane_width, torus=False)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
         # self.schedule = RandomActivation(self)
@@ -72,13 +76,15 @@ class Model(mesa.Model):
             shuffle_between_stages=False)
 
         self.data = data.Data()
-        self.data_collector = DataCollector(model_reporters={
-            "Density": data.density,
-            "Flow": data.flow # TODO measuring the flow is maybe not necessary,
-            # since the flow rate is a parameter for the simulation,
-            # unless we want to measure the flow rate at another reference point 
-        })
-        
+        self.data_collector = DataCollector(
+            model_reporters={
+                "Density": data.density,
+                "Flow":
+                data.flow  # TODO measuring the flow is maybe not necessary,
+                # since the flow rate is a parameter for the simulation,
+                # unless we want to measure the flow rate at another reference point
+            })
+
     def step(self):
         self.generate_cars()
         self.schedule.step()
@@ -89,23 +95,27 @@ class Model(mesa.Model):
             self.generate_car()
 
     def generate_car(self,
-                     max_speed_sigma=5,
+                     max_speed_sigma=3,
                      bias_right_lane=0.5,
                      bias_right_lane_sigma=3,
-                     minimal_overtake_distance=2.0):
+                     x=0):
+        vel = np.array([self.max_speed, 0])
         max_speed = self.stochastic_params(
             self.max_speed, max_speed_sigma, seconds=None)
-        vel = np.array([self.max_speed, 0])
+        max_speed = np.clip(max_speed, self.max_speed / 2, None)
+
+        # TODO forward, backward min distance
+        min_distance = self.stochastic_params(self.min_distance_mu,
+                                              self.min_distance_sigma)
         # bias to go to the right lane (probability based, per minute)
         bias_right_lane = self.stochastic_params(
             bias_right_lane,
             bias_right_lane_sigma,
             seconds=Model.BIAS_RIGHT_LANE_SECONDS)
-        # TODO stochastic minimal_overtake_distance?
         try:
-            pos = self.generate_car_position(vel)
+            pos = self.generate_car_position(vel, x)
             car = Car(self.next_id(), self, pos, vel, max_speed,
-                      bias_right_lane, minimal_overtake_distance)
+                      bias_right_lane, min_distance)
 
             self.space.place_agent(car, car.pos)
             self.schedule.add(car)
@@ -117,12 +127,16 @@ class Model(mesa.Model):
         for lane_index in np.random.permutation(self.space.n_lanes):
             x = 0
             y = self.space.center_of_lane(lane_index)
-            (other_car, _), (distance, _) = self.space.neighbours(
+            (other_car, _), (distance_abs, _) = self.space.neighbours(
                 None, lane=lane_index)
-            # util.distance_in_seconds(distance, vel[0], other_car.vel[0])
-            if distance < self.min_spacing:
-                # TODO distance in s
+            if not other_car:
                 return (x, y)
+            distance_s = road.distance_in_seconds(distance_abs, vel)
+            if distance_s >= self.min_spacing:
+                return (x, y)
+        # print(distance_abs, distance_s, self.min_spacing)
+        # print(distance_s < self.min_spacing)
+        # stop
         raise UserWarning('Cannot generate new car')
 
     def delay_time_to_probability(self, T=0):

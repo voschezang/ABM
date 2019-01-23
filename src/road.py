@@ -23,6 +23,20 @@ Neighbours = namedtuple("Neighbours", [
 ])
 
 
+def distance_in_seconds(distance_abs, vel_self, vel_other=None):
+    """ Returns the distance to another object in seconds, assuming the object is moving with a constant velocity
+    Velocity in the y-dimension is ignored
+
+    distance_abs -- absolute distance
+    vel_self, vel_other - tuple of velocity in x,y direction in seconds
+    """
+    if vel_self[0] == 0:
+        return 1e15
+    if vel_other is None:
+        return distance_abs / vel_self[0]
+    return distance_abs / (vel_self[0] - vel_other[0])
+
+
 class Road(ContinuousSpace):
     def __init__(self, model, length, n_lanes, lane_width, torus):
         super().__init__(length, n_lanes * lane_width, torus)
@@ -70,23 +84,21 @@ class Road(ContinuousSpace):
         ]
 
     def distance(self, a, b, forward=True):
-        """Returns forward/backward distance in meter from a to b
-
-        Note
-        ----
-        returned distance does not include car size, so distance is center-to-center
+        """Returns forward/backward absolute distance in meters _between_ a and b
         """
-        d = b.pos[0] - a.pos[0]
-        if not forward:
-            d *= -1
+        if forward:
+            # b is in front of a
+            d = b.pos[0] - b.length() - a.pos[0]
+        else:
+            # incl the edge case where parts of the cars overlap
+            d = a.pos[0] - b.pos[0] - a.length()
 
-        if self.torus:
-            if d < 0:
-                d += self.length
-        return d
+        assert (not self.torus)
+        return min(d, 0)
 
     def neighbours(self, car, lane=None):
-        """Get the first car in a lane in front and back, and the absolute distances to them if they exist (with -1 as default).
+        """Get the first car in a lane in front and back, and the absolute distances (in m) to them if they exist (-1 as default).
+        Note that the car_length is subtracted for cars in front of the agent
 
         Parameters
         ----------
@@ -107,7 +119,8 @@ class Road(ContinuousSpace):
                     # assume the car is not (yet) placed
                     # TODO ignore backward search
                     # TODO distance in s (2)
-                    d = other_car.pos[0]
+                    d = other_car.pos[0] - other_car.length()
+                    d = min(0, d)
                 if d > 0 and (cars[i] is None or d < distances[i]):
                     cars[i] = other_car
                     distances[i] = d
@@ -155,7 +168,6 @@ class Road(ContinuousSpace):
         return False
 
     def steer(self, vel, direction):
-        # TODO use rotation matrix to force preservation of momentum (velocity)
         vel[1] = direction * self.lane_width / self.model.lane_change_time
         return vel
 
