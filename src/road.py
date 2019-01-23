@@ -30,10 +30,10 @@ def distance_in_seconds(distance_abs, vel_self, vel_other=None):
     distance_abs -- absolute distance
     vel_self, vel_other - tuple of velocity in x,y direction in seconds
     """
-    if vel_self[0] == 0:
-        return 1e15
     if vel_other is None:
         return distance_abs / vel_self[0]
+    if vel_self[0] == vel_other[0]:
+        return 1e15  # arbitrarily large
     return distance_abs / (vel_other[0] - vel_self[0])
 
 
