@@ -25,7 +25,9 @@ n_lanes -- number of lanes.
 
 flow -- number of cars generated per lane per second (stochastic)
 
-max_speed -- maximum speed cars will try to travel at in km/h (will be converted to m/s).
+max_speed_mu -- maximum speed cars will try to travel at in km/h (will be converted to m/s).
+
+max_speed_sigma -- standard deviation
 
 car_length -- length of each car.
 
@@ -42,6 +44,11 @@ car_dec -- deceleration of the cars (in m\s2).
 p_slowdown -- probability of a car slowing down per hour.
 
 time_step -- in seconds.
+
+bias_right_lane_mu -- per second. I.e. frequency of checking if going to the right lane is possible.
+
+bias_right_lane_sigma -- standard deviation
+
 
 
 
