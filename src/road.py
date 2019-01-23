@@ -83,18 +83,18 @@ class Road(ContinuousSpace):
             if car.lane == lane and car not in exclude
         ]
 
-    def distance(self, a, b, forward=True):
-        """Returns forward/backward absolute distance in meters _between_ a and b
-        """
-        if forward:
-            # b is in front of a
-            d = b.pos[0] - b.length() - a.pos[0]
-        else:
-            # incl the edge case where parts of the cars overlap
-            d = a.pos[0] - b.pos[0] - a.length()
+    def distance_between_coordinates(self, a, b):
+        return b[0] - a[0]
 
-        assert (not self.torus)
-        return min(d, 0)
+    def distance_between_objects(self, a, b):
+        assert (not self.torus)  # not implemented
+        d = self.distance_between_coordinates(a.pos, b.pos)
+        # assume pos indicates the front of the object
+        # (this does not matter much for the visualization)
+        if d >= 0:
+            return max(0, d - b.length())
+        else:
+            return min(0, d + a.length())
 
     def neighbours(self, car, lane=None):
         """Get the first car in a lane in front and back, and the absolute distances (in m) to them if they exist (-1 as default).
@@ -113,14 +113,7 @@ class Road(ContinuousSpace):
         for other_car in self.cars_in_lane(
                 lane if not lane is None else car.lane, exclude=car):
             for i, forward in enumerate([True, False]):
-                if car:
-                    d = self.distance(car, other_car, forward)
-                else:
-                    # assume the car is not (yet) placed
-                    # TODO ignore backward search
-                    # TODO distance in s (2)
-                    d = other_car.pos[0] - other_car.length()
-                    d = min(0, d)
+                d = self.distance_between_objects(car, other_car)
                 if d > 0 and (cars[i] is None or d < distances[i]):
                     cars[i] = other_car
                     distances[i] = d

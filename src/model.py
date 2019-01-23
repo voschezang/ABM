@@ -113,30 +113,28 @@ class Model(mesa.Model):
             bias_right_lane_sigma,
             seconds=Model.BIAS_RIGHT_LANE_SECONDS)
         try:
-            pos = self.generate_car_position(vel, x)
-            car = Car(self.next_id(), self, pos, vel, max_speed,
+            pos_placeholder = np.zeros(2)
+            car = Car(self.next_id(), self, pos_placeholder, vel, max_speed,
                       bias_right_lane, min_distance)
+            self.set_car_position(car, x)
 
             self.space.place_agent(car, car.pos)
             self.schedule.add(car)
         except UserWarning as e:
             if self.verbose: print(e)
 
-    def generate_car_position(self, vel, x=0):
+    def set_car_position(self, car, x=0):
         # randomly iterate all lanes until an empty slot is found
         for lane_index in np.random.permutation(self.space.n_lanes):
-            x = 0
-            y = self.space.center_of_lane(lane_index)
+            car.pos[0] = 0
+            car.pos[1] = self.space.center_of_lane(lane_index)
             (other_car, _), (distance_abs, _) = self.space.neighbours(
-                None, lane=lane_index)
+                car, lane=lane_index)
             if not other_car:
-                return (x, y)
-            distance_s = road.distance_in_seconds(distance_abs, vel)
+                return car
+            distance_s = road.distance_in_seconds(distance_abs, car.vel)
             if distance_s >= self.min_spacing:
-                return (x, y)
-        # print(distance_abs, distance_s, self.min_spacing)
-        # print(distance_s < self.min_spacing)
-        # stop
+                return car
         raise UserWarning('Cannot generate new car')
 
     def delay_time_to_probability(self, T=0):
