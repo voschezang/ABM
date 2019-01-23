@@ -58,15 +58,10 @@ bias_right_lane_sigma -- standard deviation
 - Slow down if another car is in front of agent (within range)
 - Disable backwards movement
 
-### Extended rules
+### Extended rules (outdated)
 - Overtake any car in front of agent (if possible)
 
-### direct approach
-- add state : `{driving, switching lane}`
-- add choice set : `{switch lane, stay on lane}`
-
-### indirect approach (preferred)
-overtake reasoning
+overtake reasoning  (outdated)
 ```python
 def step():
  update_vel()
