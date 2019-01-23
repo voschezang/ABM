@@ -128,9 +128,6 @@ class Car(Agent):
         # clip negative velocities to zero
         vel_next[0] = max(0, vel_next[0])
 
-        # d_vel_max = self.vel[0] + self.model.car_acc * self.model.time_step
-        # d_vel_min = self.vel[0] * 1 - self.model.car_dec * self.model.time_step
-        # vel_next[0] = np.clip(vel_next[0], d_vel_min, d_vel_max)
         self.vel_next = vel_next
 
     def accelerate_vel(self, vel):
