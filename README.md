@@ -22,19 +22,19 @@ Papers zoeken:
 
 length -- length of the road in meters.
 
-lane_width -- width of a lane in meters.
+lane_width -- width of a lane in meters: 3.5m, https://nl.wikipedia.org/wiki/Rijstrook
 
 n_lanes -- number of lanes.
 
 flow -- number of cars generated per lane per second (stochastic)
 
-max_speed_mu -- maximum speed cars will try to travel at in km/h (will be converted to m/s).
+max_speed_mu -- maximum speed cars will try to travel at in km/h (will be converted to m/s): 120
 
 max_speed_sigma -- standard deviation
 
-car_length -- length of each car.
+car_length -- length of each car: 4.4m,http://cardriveby.com/what-is-the-average-length-of-a-car/
 
-min_spacing -- the minimum distance in seconds a car keeps from other cars (front to back). Incorporating the cars' velocity but ignoring the other cars' velocity
+min_spacing -- the minimum distance in seconds a car keeps from other cars (front to back). Incorporating the cars' velocity but ignoring the other cars' velocity: 2 seconds, https://2seconden.nl/
 
 min_distance_mu -- the mean of the mean min-distance for each car. Min-distance is the min. preferred amount of seconds that a car would want to keep from other cars (incl the other car's velocity). A relative distance of x seconds means that an car will reach another car in x seconds.
 
