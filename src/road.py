@@ -86,12 +86,7 @@ class Road(ContinuousSpace):
         return self.distance_from_center_of_lane(pos) > 0
 
     def distance_toroidal(self, a, b, forward=True):
-        """Returns forward/backward distance (on a toroidal road) in meter from a to b
-
-        Note
-        ----
-        returned distance does not include car size, so distance is center-to-center
-        """
+        """Returns forward/backward distance (on a toroidal road) in meter from a to b"""
         d = b.pos[0] - a.pos[0]
         if not forward:
             d *= -1
