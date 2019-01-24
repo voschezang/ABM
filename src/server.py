@@ -6,7 +6,7 @@ from .model import Model
 from .SimpleContinuousModule import SimpleCanvas
 
 # parameters
-length = 200
+length = 1000
 car_length = 5
 car_width = 1.8
 lane_width = 3.5
@@ -19,24 +19,20 @@ model_params = {
     "n_lanes":
     UserSettableParameter(UserSettableParameter.SLIDER, "Number of Lanes", 2,
                           1, Model.MAX_LANES, 1),
-    "flow":
+    "n_cars":
     UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Flow per lane per second", .6, 0, 1, 0.05),
-    "max_speed":
+                          "Number of cars", 10, 1, 100, 5),
+    "max_speed_mu":
     UserSettableParameter(UserSettableParameter.SLIDER, "Maximum speed (km/h)",
                           120, 1, 150, 10),
     "car_length":
     car_length,
     "min_spacing":
     UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Minimum spacing between cars (s)", 1, 0, 5, 0.5),
-    "car_acc":
-    33 / 10,
-    "car_dec":
-    33 / 5,
+                          "Minimum spacing between cars (s)", 1, 0, 3, 0.5),
     "p_slowdown":
     UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Probability of slowing down", 0.2, 0, 1, 0.1),
+                          "Frequency of a car slowing down randomly (per hour)", 60, 0, 100, 1),
     "time_step":
     0.1
 }
@@ -64,7 +60,7 @@ chart = ChartModule(
         "Label": "Flow",
         "Color": "red"
     }],
-    data_collector_name="data_collector")
+    data_collector_name="data")
 
 server = ModularServer(Model, [car_canvas, chart], "Traffic simulation",
                        model_params)

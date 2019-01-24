@@ -1,3 +1,5 @@
+from mesa.datacollection import DataCollector
+
 ### datacollection functions
 
 
@@ -8,24 +10,22 @@ def density(model):
 
 def flow(model):
     """Flow: number of cars passing a reference point per unit of time."""
-    reference_pont = model.space.length / 2
 
-    for car in model.schedule.agents:
-        if car.pos[0] > reference_pont:
-            model.data.flow_cars.add(car.unique_id)
-
-    if model.schedule.time * model.time_step % 10 < model.time_step:
-        model.data.flow = len(
-            model.data.flow_cars.difference(model.data.flow_cars_previous))
-        model.data.flow_cars_previous = model.data.flow_cars
-        model.data.flow_cars = set()
-
-    return model.data.flow
+    # get the flow in the current timestep
+    flow_in_timestep = model.data.flow
+    # reset flow counter
+    model.data.flow = 0
+    return flow_in_timestep
 
 
-class Data():
-    def __init__(self):
-        # create data collectors
+class Data(DataCollector):
+    def __init__(self, flow_reference_point):
+        super().__init__(model_reporters={
+                #"Density": density,
+                "Flow": flow
+            })
+
+        # setup data collectotion variables
+        self.flow_reference_point = flow_reference_point
         self.flow = 0
-        self.flow_cars = set()
-        self.flow_cars_previous = set()
+
