@@ -13,7 +13,7 @@ class Direction(IntEnum):
 
 class Neighbours:
     def __init__(self, left, current, right):
-        """Store the neighbours (and distances) per lane (Left, Current, Right)""" 
+        """Store the neighbours (and distances) per lane (Left, Current, Right)"""
         self._cars = [left[0], current[0], right[0]]
         self._distances = [left[1], current[1], right[1]]
 
@@ -27,11 +27,11 @@ class Neighbours:
     def f(self):
         """Neighbour in front."""
         return self._cars[1][0]
+
     @property
     def f_d(self):
         """Distance to the neighbour in front."""
         return self._distances[1][0]
-
 
 
 def distance_in_seconds(distance_abs, vel_self, vel_other=None):
@@ -49,14 +49,16 @@ def distance_in_seconds(distance_abs, vel_self, vel_other=None):
     return distance_abs / vel
 
 
+LANE_WIDTH = 3.5  # in meters.
+
+
 class Road(ContinuousSpace):
-    def __init__(self, model, length, n_lanes, lane_width, torus):
-        super().__init__(length, n_lanes * lane_width, torus)
+    def __init__(self, model, length, n_lanes, torus):
+        super().__init__(length, n_lanes * LANE_WIDTH, torus)
 
         self.length = length
         self.model = model
         self.n_lanes = n_lanes
-        self.lane_width = lane_width
 
     # override
     def place_agent(self, agent, pos):
@@ -70,17 +72,17 @@ class Road(ContinuousSpace):
 
     def lane_at(self, pos):
         """Returns the lane number of a position"""
-        return int(pos[1] // self.lane_width)
+        return int(pos[1] // LANE_WIDTH)
 
     def center_of_lane(self, lane):
         """Return the position of the center of a lane."""
-        return (lane + 0.5) * self.lane_width
+        return (lane + 0.5) * LANE_WIDTH
 
     def lane_exists(self, lane):
         return lane >= 0 and lane < self.n_lanes
 
     def distance_from_center_of_lane(self, pos):
-        return pos[1] % self.lane_width - self.lane_width / 2
+        return pos[1] % LANE_WIDTH - LANE_WIDTH / 2
 
     def is_right_of_center_of_lane(self, pos):
         return self.distance_from_center_of_lane(pos) > 0
@@ -122,7 +124,7 @@ class Road(ContinuousSpace):
         cars = self.cars_in_lane(lane)
         if not cars:
             return None
-        return min(cars, key= lambda car: car.pos[0])
+        return min(cars, key=lambda car: car.pos[0])
 
     def neighbours(self, car, lane=None):
         """Get the first car in a lane in front and back, and the absolute distances (in m) to them if they exist (-1 as default).
@@ -157,6 +159,7 @@ class Road(ContinuousSpace):
 
     def all_neighbours(self, car):
         """Return all neighbours for a car"""
-        return Neighbours(*[self.neighbours(car, car.lane + i) for i in [Direction.L, Direction.C, Direction.R]])
-
-  
+        return Neighbours(*[
+            self.neighbours(car, car.lane + i)
+            for i in [Direction.L, Direction.C, Direction.R]
+        ])

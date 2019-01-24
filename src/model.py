@@ -3,7 +3,6 @@ import numpy as np
 import mesa
 from mesa.time import StagedActivation, RandomActivation
 
-
 import src.util as util
 import src.road as road
 from .car import Car
@@ -13,19 +12,20 @@ import src.data as data
 class Model(mesa.Model):
     """Traffic flow simulation with multiple lanes and lane-chaning."""
 
-    MAX_LANES = 10
     BIAS_RIGHT_LANE_SECONDS = 1
+    CAR_LENGTH = 4.4  # in meters
+    CAR_WIDTH = 1.8  # in meters
+    MAX_LANES = 10
 
     def __init__(self,
                  length=1000,
-                 lane_width=3.5,
                  n_lanes=1,
                  n_cars=10,
                  fraction_autonomous=0,
                  max_speed_mu=10,
                  max_speed_sigma=3,
                  car_length=4.4,
-                 min_spacing=1,
+                 min_spacing=2,
                  min_distance_mu=2,
                  min_distance_sigma=0,
                  car_acc=3,
@@ -40,13 +40,11 @@ class Model(mesa.Model):
         Parameters
         ----------
         length -- length of the road in meters.
-        lane_width -- width of a lane in meters.
         n_lanes -- number of lanes.
         n_cars -- number of cars on the road.
         fraction_autonomous -- fraction of `n_cars` that are autonomous vehicles.
         max_speed_mu -- maximum speed cars will try to travel at in km/h (will be converted to m/s).
         max_speed_sigma -- standard deviation of max_speed.
-        car_length -- length of each car.
         min_spacing -- the minimum distance in seconds a car keeps from other cars (front to back). Incorporating the cars' velocity but ignoring the other cars' velocity
         min_distance_mu -- the mean of the mean min-distance for each car. Min-distance is the min. preferred amount of seconds that a car would want to keep from other cars (incl the other car's velocity). A relative distance of x seconds means that an car will reach another car in x seconds.
         min_distance_sigma -- the standard deviation of the min-distance for each car
@@ -60,6 +58,9 @@ class Model(mesa.Model):
         """
 
         super().__init__()
+        self.car_length = Model.CAR_LENGTH
+        self.car_width = Model.CAR_WIDTH
+
         np.random.seed(seed)
         self.reset_randomizer(seed)
         self.verbose = verbose
@@ -69,7 +70,6 @@ class Model(mesa.Model):
         self.fraction_autonomous = fraction_autonomous
         self.max_speed_mu = max_speed_mu / 3.6
         self.max_speed_sigma = max_speed_sigma
-        self.car_length = car_length
         self.min_spacing = min_spacing
         self.min_distance_mu = min_distance_mu
         self.min_distance_sigma = min_distance_sigma
@@ -79,7 +79,7 @@ class Model(mesa.Model):
         self.bias_right_lane = bias_right_lane
         self.lane_change_time = 2  # TODO use rotation matrix
 
-        self.space = road.Road(self, length, n_lanes, lane_width, torus=True)
+        self.space = road.Road(self, length, n_lanes, torus=True)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
         # self.schedule = RandomActivation(self)
@@ -101,13 +101,16 @@ class Model(mesa.Model):
         """Create self.n_cars number of agents and add them to the model (space, schedule)"""
 
         # x coordinates for the agents
-        xs = (np.random.permutation(self.n_cars) + np.random.random(self.n_cars)) / self.n_cars * self.space.length
+        xs = (
+            np.random.permutation(self.n_cars) + np.random.random(self.n_cars)
+        ) / self.n_cars * self.space.length
 
         normal_cars = int(self.n_cars * (1 - self.fraction_autonomous))
         autonomous_cars = self.n_cars - normal_cars
 
         for i in range(self.n_cars):
-            y = self.space.center_of_lane(self.random.randint(0, self.space.n_lanes-1))
+            y = self.space.center_of_lane(
+                self.random.randint(0, self.space.n_lanes - 1))
             pos = (xs[i], y)
             vel = np.array([self.max_speed_mu, 0])
 
@@ -118,7 +121,8 @@ class Model(mesa.Model):
                 max_speed = self.stochastic_params(
                     self.max_speed_mu, self.max_speed_sigma, seconds=None)
 
-                min_distance = np.random.normal(self.min_distance_mu, self.min_distance_sigma)
+                min_distance = np.random.normal(self.min_distance_mu,
+                                                self.min_distance_sigma)
 
                 p_slowdown = np.random.normal(self.p_slowdown, 0)
 
@@ -145,8 +149,6 @@ class Model(mesa.Model):
             self.space.place_agent(car, car.pos)
             self.schedule.add(car)
 
-
-  
     def delay_time_to_probability(self, T=0):
         """Return the probability required to simulate a delay in communication
         used to simulate reaction time

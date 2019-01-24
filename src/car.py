@@ -20,8 +20,16 @@ class CarInFront(enum.Enum):
 
 
 class Car(Agent):
-    def __init__(self, unique_id, model, pos, vel, max_speed, bias_right_lane,
-                 min_distance, p_slowdown, autonomous=False):
+    def __init__(self,
+                 unique_id,
+                 model,
+                 pos,
+                 vel,
+                 max_speed,
+                 bias_right_lane,
+                 min_distance,
+                 p_slowdown,
+                 autonomous=False):
         """Create an agent that represents a car
 
         Parameters
@@ -219,8 +227,7 @@ class Car(Agent):
         f_d, b_d = neighbours.distances(direction)
 
         # check if there is space for overtaking
-        if not f or f_d > vel[0] * (
-                self.model.time_step + self.min_distance):
+        if not f or f_d > vel[0] * (self.model.time_step + self.min_distance):
             if not b or b_d > b.vel[0] * (
                     self.model.time_step + self.min_distance):
                 movement_direction = Direction.L if self.pos[1] > self.model.space.center_of_lane(
@@ -233,7 +240,7 @@ class Car(Agent):
 
     def steer(self, vel, direction):
         """Steer in the specified direction, such that a complete lane-change can be performed in `lane_change_time`"""
-        vel[1] = direction * self.model.space.lane_width / self.model.lane_change_time
+        vel[1] = direction * road.LANE_WIDTH / self.model.lane_change_time
         return vel
 
     # def steer(self, vel, degrees):
