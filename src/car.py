@@ -58,6 +58,14 @@ class Car(Agent):
         self.lane = None
         self.target_lane = None
 
+    @property
+    def length(self):
+        return self.LENGTH
+
+    @property
+    def width(self):
+        return self.WIDTH
+
     def step(self):
         self.update_vel_next()
         self.move()
@@ -133,7 +141,7 @@ class Car(Agent):
         if self.will_randomly_slow_down():
             self.random_slow_down(vel_next)
 
-        # clip negative velocities to zero
+        # prevent negative velocities
         vel_next[0] = max(0, vel_next[0])
 
         self.vel_next = vel_next
@@ -178,23 +186,15 @@ class Car(Agent):
         if reason == CarInFront.no:
             pass
         elif reason == CarInFront.min_spacing:
-            # print(self.unique_id, '\t breaks for\t', other_car.unique_id,
-            #       '\t (min spacing)')
-            # keep `min_spacing` seconds distance
             vel[0] = distance_abs / (
                 self.model.time_step + self.model.min_spacing)
 
         elif reason == CarInFront.min_relative_distance:
-            # print(self.unique_id, '\t breaks for\t', other_car.unique_id,
-            #       '\t (min distance)')
-            # print('\t d vel (int): %i - %i' % (self.vel[0], other_car.vel[0]))
             distance_rel_s = self.distance_rel_s(distance_abs, vel, other_car)
             assert (distance_rel_s > 0)
             d_vel_rel = distance_rel_s / self.min_distance
             d_vel = max(self.model.car_dec, d_vel_rel) * self.model.time_step
             vel[0] = self.vel[0] * (1 - d_vel)
-            # print('vel: %f, rel vel: %f' % (vel[0],
-            #                                 d_vel_rel * self.model.time_step))
 
         return vel
 
@@ -204,14 +204,6 @@ class Car(Agent):
     def random_slow_down(self, vel):
         vel[0] -= self.model.car_dec * self.model.time_step
         return vel
-
-    @property
-    def length(self):
-        return self.LENGTH
-
-    @property
-    def width(self):
-        return self.WIDTH
 
     def distance_s(self, distance_abs, vel):
         return road.distance_in_seconds(distance_abs, vel)
