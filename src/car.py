@@ -9,6 +9,7 @@ from .road import Direction
 
 # TODO vision in seconds? or min_distance-backward in seconds?
 
+
 class CarInFront(enum.Enum):
     """
     min_spacing has priority over min_relative_distance because it assumes the worst case
@@ -53,8 +54,7 @@ class Car(Agent):
 
         if not self.model.space.torus and self.model.space.out_of_bounds(
                 self.pos):
-            self.model.space.remove_agent(self)
-            self.model.schedule.remove(self)
+            self.model.remove_car(self)
             return
 
         self.model.space.move_agent(self, self.pos)
@@ -83,15 +83,14 @@ class Car(Agent):
                 if self.random.random() < self.bias_right_lane:
                     _, vel_next = self.try_steer_to_lane(
                         vel_next, neighbours, self.lane + Direction.R)
-            
-            # if needs to brake
-            if needs_to_brake != CarInFront.no:
+
+            else:  # if needs to brake
                 # try overtaking
                 success, vel_next = self.try_steer_to_lane(
-                        vel_next, neighbours, self.lane + Direction.L)
+                    vel_next, neighbours, self.lane + Direction.L)
                 if not success:
-                    vel_next = self.brake(needs_to_brake, vel_next, neighbours.f_d,
-                                          neighbours.f)
+                    vel_next = self.brake(needs_to_brake, vel_next,
+                                          neighbours.f_d, neighbours.f)
 
         # if changing lane and on target_lane
         elif self.lane == self.target_lane:
@@ -101,11 +100,11 @@ class Car(Agent):
             if needs_to_brake != CarInFront.no:
                 vel_next = self.brake(needs_to_brake, vel_next, neighbours.f_d,
                                       neighbours.f)
-        
+
         # if changing lane and not on target_lane
         else:
-            success, vel_next = self.try_steer_to_lane(
-                vel_next, neighbours, self.target_lane)
+            success, vel_next = self.try_steer_to_lane(vel_next, neighbours,
+                                                       self.target_lane)
             if not success:
                 self.target_lane = self.lane
                 vel_next = self.center_on_current_lane(vel_next)
@@ -114,7 +113,6 @@ class Car(Agent):
             if needs_to_brake != CarInFront.no:
                 vel_next = self.brake(needs_to_brake, vel_next, neighbours.f_d,
                                       neighbours.f)
-
 
         ### randomly slow down
         if self.will_randomly_slow_down():
@@ -168,7 +166,8 @@ class Car(Agent):
             # print(self.unique_id, '\t breaks for\t', other_car.unique_id,
             #       '\t (min spacing)')
             # keep `min_spacing` seconds distance
-            vel[0] = distance_abs / (self.model.time_step + self.model.min_spacing)
+            vel[0] = distance_abs / (
+                self.model.time_step + self.model.min_spacing)
 
         elif reason == CarInFront.min_relative_distance:
             # print(self.unique_id, '\t breaks for\t', other_car.unique_id,
@@ -218,7 +217,8 @@ class Car(Agent):
                 self.model.time_step + self.model.min_spacing):
             if not b or b_d > b.vel[0] * (
                     self.model.time_step + self.model.min_spacing):
-                movement_direction = Direction.L if self.pos[1] > self.model.space.center_of_lane(lane) else Direction.R
+                movement_direction = Direction.L if self.pos[1] > self.model.space.center_of_lane(
+                    lane) else Direction.R
                 vel = self.steer(vel, movement_direction)
                 self.target_lane = lane
                 return (True, vel)
@@ -251,7 +251,9 @@ class Car(Agent):
         # check if moving in direction of the center, would result in overshooting
         if direction * (vel[1] * self.model.time_step + d) >= 0:
             # center the car in the lane
-            self.pos[1] = self.model.space.center_of_lane(self.lane) # TODO setting the position might seem a bit dangerous, 
+            self.pos[1] = self.model.space.center_of_lane(
+                self.lane
+            )  # TODO setting the position might seem a bit dangerous,
             # but this is okay for now since the y-pos of this car will not be used by other cars.
             vel[1] = 0
             self.target_lane = None
