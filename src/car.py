@@ -226,6 +226,7 @@ class Car(Agent):
         return d * self.distance_error_factor()
 
     def distance_error_factor(self):
+        # TODO prevent small timesteps from averaging out the error
         return 1 + self.distance_error_sigma * np.random.randn()
 
     def try_steer_to_lane(self, vel, neighbours, lane):
