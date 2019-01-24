@@ -103,6 +103,10 @@ class Model(mesa.Model):
         self.schedule.step()
         self.data_collector.collect(self)
 
+    def remove_car(self, car):
+        self.space.remove_agent(car)
+        self.schedule.remove(car)
+
     def generate_cars(self):
         if self.random.random() < self.flow:
             self.generate_car()
@@ -113,7 +117,8 @@ class Model(mesa.Model):
             self.max_speed_mu, self.max_speed_sigma, seconds=None)
         max_speed = np.clip(max_speed, self.max_speed_mu / 2, None)
 
-        min_distance = np.random.normal(self.min_distance_mu, self.min_distance_sigma)
+        min_distance = np.random.normal(self.min_distance_mu,
+                                        self.min_distance_sigma)
         # bias to go to the right lane (probability based, per minute)
         bias_right_lane = self.stochastic_params(
             self.bias_right_lane_mu,
@@ -136,7 +141,8 @@ class Model(mesa.Model):
             car.pos[0] = 0
             car.pos[1] = self.space.center_of_lane(lane_index)
             first_car = self.space.first_car_in_lane(lane_index)
-            if not first_car or road.distance_in_seconds(first_car.pos[0], car.vel) >= self.min_spacing:
+            if not first_car or road.distance_in_seconds(
+                    first_car.pos[0], car.vel) >= self.min_spacing:
                 return car
         raise UserWarning('Cannot generate new car')
 
@@ -168,5 +174,3 @@ class Model(mesa.Model):
         # the probability per second should exceed the time step length
         assert (seconds >= self.time_step)
         return p * self.time_step / seconds
-
-
