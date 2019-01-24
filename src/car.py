@@ -114,8 +114,7 @@ class Car(Agent):
                 success, vel_next = self.try_steer_to_lane(
                     vel_next, neighbours, self.lane + Direction.L)
                 if not success:
-                    vel_next = self.brake(needs_to_brake, vel_next, distance,
-                                          neighbours.f)
+                    vel_next = self.brake(needs_to_brake, vel_next, distance)
 
         # if changing lane and on target_lane
         elif self.lane == self.target_lane:
@@ -123,8 +122,7 @@ class Car(Agent):
 
             # if needs to brake
             if needs_to_brake != CarInFront.no:
-                vel_next = self.brake(needs_to_brake, vel_next, distance,
-                                      neighbours.f)
+                vel_next = self.brake(needs_to_brake, vel_next, distance)
 
         # if changing lane and not on target_lane
         else:
@@ -136,8 +134,7 @@ class Car(Agent):
 
             # if needs to brake
             if needs_to_brake != CarInFront.no:
-                vel_next = self.brake(needs_to_brake, vel_next, distance,
-                                      neighbours.f)
+                vel_next = self.brake(needs_to_brake, vel_next, distance)
 
         ### randomly slow down
         if self.will_randomly_slow_down():
@@ -178,11 +175,9 @@ class Car(Agent):
         # TODO use limited vision (in s) param
         vision = 200
         distance_s = road.distance_in_seconds(distance_abs, vel)
-        # distance_s = road.distance_in_seconds(distance_abs, -vel)
         return distance_s < vision
 
-    def brake(self, reason, vel, distance, other_car):
-        # def brake(self, reason, vel, distance_abs, other_car):
+    def brake(self, reason, vel, distance):
         if vel[0] <= 0:
             vel[0] = 0
             return vel
@@ -194,14 +189,14 @@ class Car(Agent):
             # distance - vel[0] * time_step = vel[0] * min_spacing
             vel_new = distance_abs / (
                 self.model.time_step + self.model.min_spacing)
-            d_vel = max(self.model.car_dec, self.vel[0] - vel_new)
+            d_vel = min(self.model.car_dec * self.model.time_step, self.vel[0] - vel_new)
             vel[0] = self.vel[0] - d_vel
 
         elif reason == CarInFront.min_relative_distance:
             distance_rel_s = distance
             assert (distance_rel_s > 0)
             d_vel_rel = distance_rel_s / self.min_distance
-            d_vel = max(self.model.car_dec, d_vel_rel) * self.model.time_step
+            d_vel = min(self.model.car_dec, d_vel_rel) * self.model.time_step
             vel[0] = self.vel[0] * (1 - d_vel)
 
         return vel
