@@ -19,7 +19,7 @@ class Model(mesa.Model):
                  n_lanes=1,
                  n_cars=10,
                  fraction_autonomous=0,
-                 max_speed_mu=10,
+                 max_speed_mu=120,
                  max_speed_sigma=3,
                  min_spacing=2,
                  min_distance_mu=2,
