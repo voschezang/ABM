@@ -21,7 +21,7 @@ class CarInFront(enum.Enum):
 
 class Car(Agent):
     def __init__(self, unique_id, model, pos, vel, max_speed, bias_right_lane,
-                 min_distance, p_slowdown):
+                 min_distance, p_slowdown, autonomous=False):
         """Create an agent that represents a car
 
         Parameters
@@ -32,7 +32,9 @@ class Car(Agent):
         vel -- tuple of current x,y velocities of the car.
         max_speed -- in m/s.
         bias_right_lane -- bias to move to the right-hand lane in range [0,1].
-        minimal_overtake_distance -- in time units.
+        minimal_distance -- in time units.
+        p_slowdown -- probability of random slowing down in a timestep.
+        autonomous -- whether the car is autonomous or not.
         """
 
         super().__init__(unique_id, model)
@@ -42,6 +44,7 @@ class Car(Agent):
         self.bias_right_lane = bias_right_lane
         self.min_distance = min_distance
         self.p_slowdown = p_slowdown
+        self.autonomous = autonomous
         self.lane = None
         self.target_lane = None
 
@@ -59,11 +62,6 @@ class Car(Agent):
             self.model.data.flow += 1
 
         self.pos = pos_next
-
-        if not self.model.space.torus and self.model.space.out_of_bounds(
-                self.pos):
-            self.model.remove_car(self)
-            return
 
         self.model.space.move_agent(self, self.pos)
 
@@ -222,9 +220,9 @@ class Car(Agent):
 
         # check if there is space for overtaking
         if not f or f_d > vel[0] * (
-                self.model.time_step + self.model.min_spacing):
+                self.model.time_step + self.min_distance):
             if not b or b_d > b.vel[0] * (
-                    self.model.time_step + self.model.min_spacing):
+                    self.model.time_step + self.min_distance):
                 movement_direction = Direction.L if self.pos[1] > self.model.space.center_of_lane(
                     lane) else Direction.R
                 vel = self.steer(vel, movement_direction)

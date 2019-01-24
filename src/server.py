@@ -7,7 +7,7 @@ from .SimpleContinuousModule import SimpleCanvas
 
 # parameters
 length = 1000
-car_length = 5
+car_length = 4.4
 car_width = 1.8
 lane_width = 3.5
 
@@ -22,6 +22,9 @@ model_params = {
     "n_cars":
     UserSettableParameter(UserSettableParameter.SLIDER,
                           "Number of cars", 10, 1, 100, 5),
+    "fraction_autonomous":
+    UserSettableParameter(UserSettableParameter.SLIDER,
+                          "Fraction of autonomous cars", 0, 0, 1, 0.1),
     "max_speed_mu":
     UserSettableParameter(UserSettableParameter.SLIDER, "Maximum speed (km/h)",
                           120, 1, 150, 10),
@@ -44,7 +47,7 @@ def car_portrayal(agent):
         "w": car_length / length,  # relative to space
         "h": car_width / (Model.MAX_LANES * lane_width),  # relative
         "Filled": "true",
-        "Color": "rgba(0, 0, 255, 1.0)",
+        "Color": "rgba(0, 0, 255, 1.0)" if not agent.autonomous else "red",
         "text": agent.unique_id,
         "textColor": "black"
     }
