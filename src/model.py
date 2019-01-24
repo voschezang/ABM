@@ -21,6 +21,7 @@ class Model(mesa.Model):
                  lane_width=3.5,
                  n_lanes=1,
                  n_cars=10,
+                 fraction_autonomous=0,
                  max_speed_mu=10,
                  max_speed_sigma=3,
                  car_length=5,
@@ -42,7 +43,8 @@ class Model(mesa.Model):
         length -- length of the road in meters.
         lane_width -- width of a lane in meters.
         n_lanes -- number of lanes.
-        flow -- number of cars generated per lane per second (stochastic)
+        n_cars -- number of cars on the road.
+        fraction_autonomous -- fraction of `n_cars` that are autonomous vehicles.
         max_speed_mu -- maximum speed cars will try to travel at in km/h (will be converted to m/s).
         max_speed_sigma -- standard deviation of max_speed.
         car_length -- length of each car.
@@ -65,8 +67,8 @@ class Model(mesa.Model):
         self.verbose = verbose
 
         self.time_step = time_step
-        #self.flow = self.probability_per(flow * n_lanes, seconds=1)
         self.n_cars = n_cars
+        self.fraction_autonomous = fraction_autonomous
         self.max_speed_mu = max_speed_mu / 3.6
         self.max_speed_sigma = max_speed_sigma
         self.car_length = car_length
@@ -102,10 +104,12 @@ class Model(mesa.Model):
     def make_agents(self):
         """Create self.n_cars number of agents and add them to the model (space, schedule)"""
 
+        # x coordinates for the agents
+        xs = (np.random.permutation(self.n_cars) + np.random.random(self.n_cars)) / self.n_cars * self.space.length
+
         for i in range(self.n_cars):
-            x = self.random.random() * self.space.length
             y = self.space.center_of_lane(self.random.randint(0, self.space.n_lanes-1))
-            pos = (x, y)
+            pos = (xs[i], y)
 
             vel = np.array([self.max_speed_mu, 0])
             max_speed = self.stochastic_params(
