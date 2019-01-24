@@ -72,7 +72,6 @@ class Car(Agent):
             self.model.data.flow += 1
 
         self.pos = pos_next
-
         self.model.space.move_agent(self, self.pos)
 
     def update_vel_next(self):

@@ -90,6 +90,9 @@ class Road(ContinuousSpace):
     def is_right_of_center_of_lane(self, pos):
         return self.distance_from_center_of_lane(pos) > 0
 
+    def distance_between_coordinates(self, a, b):
+        return b[0] - a[0]
+
     def distance_toroidal(self, a, b, forward=True):
         """Returns forward/backward distance (on a toroidal road) in meter from a to b"""
         d = self.distance_between_coordinates(a.pos, b.pos)
@@ -97,10 +100,8 @@ class Road(ContinuousSpace):
             d *= -1
         if d < 0:
             d += self.length
-        return max(0, d - a.length)  # TODO not b.length?
-
-    def distance_between_coordinates(self, a, b):
-        return b[0] - a[0]
+        ln = (a.length + b.length) / 2
+        return max(0, d - ln)
 
     def distance_between_objects(self, a, b):
         assert (not self.torus)  # not implemented

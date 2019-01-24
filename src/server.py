@@ -31,7 +31,7 @@ model_params = {
 def car_portrayal(agent):
     return {
         "Shape": "rect",
-        "w": agent.length / length,  # relative to space
+        "w": agent.length / agent.model.space.length,
         "h": agent.width /
         (Model.MAX_LANES * agent.model.space.lane_width),  # relative
         "Filled": "true",

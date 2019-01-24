@@ -19,7 +19,7 @@ class Model(mesa.Model):
                  n_lanes=1,
                  n_cars=10,
                  fraction_autonomous=0,
-                 max_speed_mu=10,
+                 max_speed_mu=120,
                  max_speed_sigma=3,
                  min_spacing=2,
                  min_distance_mu=2,
@@ -121,7 +121,8 @@ class Model(mesa.Model):
                 p_slowdown = np.random.normal(self.p_slowdown, 0)
 
                 # bias right lane same for all normal cars
-                bias_right_lane = self.bias_right_lane * self.time_step / self.BIAS_RIGHT_LANE_SECONDS
+                bias_right_lane = self.probability_per(
+                    self.bias_right_lane, self.BIAS_RIGHT_LANE_SECONDS)
 
             # if autonomous car
             else:
@@ -138,10 +139,12 @@ class Model(mesa.Model):
             # create the car agent
             car = Car(self.next_id(), self, pos, vel, max_speed,
                       bias_right_lane, min_distance, p_slowdown, autonomous)
+            self.add_car(car)
 
-            # add the created car to the space and scheduler
-            self.space.place_agent(car, car.pos)
-            self.schedule.add(car)
+    def add_car(self, car):
+        # add the created car to the space and scheduler
+        self.space.place_agent(car, car.pos)
+        self.schedule.add(car)
 
     def delay_time_to_probability(self, T=0):
         """Return the probability required to simulate a delay in communication
