@@ -49,12 +49,11 @@ def distance_in_seconds(distance_abs, vel_self, vel_other=None):
     return distance_abs / vel
 
 
-LANE_WIDTH = 3.5  # in meters.
-
-
 class Road(ContinuousSpace):
+    LANE_WIDTH = 3.5  # in meters.
+
     def __init__(self, model, length, n_lanes, torus):
-        super().__init__(length, n_lanes * LANE_WIDTH, torus)
+        super().__init__(length, n_lanes * self.lane_width, torus)
 
         self.length = length
         self.model = model
@@ -70,31 +69,35 @@ class Road(ContinuousSpace):
         super().move_agent(agent, pos)
         agent.lane = self.lane_at(pos)
 
+    @property
+    def lane_width(self):
+        return self.LANE_WIDTH
+
     def lane_at(self, pos):
         """Returns the lane number of a position"""
-        return int(pos[1] // LANE_WIDTH)
+        return int(pos[1] // self.lane_width)
 
     def center_of_lane(self, lane):
         """Return the position of the center of a lane."""
-        return (lane + 0.5) * LANE_WIDTH
+        return (lane + 0.5) * self.lane_width
 
     def lane_exists(self, lane):
         return lane >= 0 and lane < self.n_lanes
 
     def distance_from_center_of_lane(self, pos):
-        return pos[1] % LANE_WIDTH - LANE_WIDTH / 2
+        return pos[1] % self.lane_width - self.lane_width / 2
 
     def is_right_of_center_of_lane(self, pos):
         return self.distance_from_center_of_lane(pos) > 0
 
     def distance_toroidal(self, a, b, forward=True):
         """Returns forward/backward distance (on a toroidal road) in meter from a to b"""
-        d = b.pos[0] - a.pos[0]
+        d = self.distance_between_coordinates(a.pos, b.pos)
         if not forward:
             d *= -1
         if d < 0:
             d += self.length
-        return max(0, d - self.model.car_length)
+        return max(0, d - a.length)  # TODO not b.length?
 
     def distance_between_coordinates(self, a, b):
         return b[0] - a[0]

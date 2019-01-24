@@ -3,7 +3,6 @@ from mesa.visualization.UserParam import UserSettableParameter
 from mesa.visualization.modules import ChartModule
 
 from .model import Model
-import src.road as road
 from .SimpleContinuousModule import SimpleCanvas
 
 # parameters
@@ -21,7 +20,7 @@ model_params = {
                           "Fraction of autonomous cars", 0, 0, 1, 0.1),
     "min_spacing":
     UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Minimum spacing between cars (s)", 1, 0, 3, 0.5),
+                          "Minimum spacing between cars (s)", 2, 0, 3, 0.5),
     "p_slowdown":
     UserSettableParameter(
         UserSettableParameter.SLIDER,
@@ -32,8 +31,9 @@ model_params = {
 def car_portrayal(agent):
     return {
         "Shape": "rect",
-        "w": Model.CAR_LENGTH / length,  # relative to space
-        "h": Model.CAR_WIDTH / (Model.MAX_LANES * road.LANE_WIDTH),  # relative
+        "w": agent.length / length,  # relative to space
+        "h": agent.width /
+        (Model.MAX_LANES * agent.model.space.lane_width),  # relative
         "Filled": "true",
         "Color": "rgba(0, 0, 255, 1.0)" if not agent.autonomous else "red",
         "text": agent.unique_id,

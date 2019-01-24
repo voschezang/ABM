@@ -3,7 +3,6 @@ import collections
 import enum
 from mesa import Agent
 
-import src.util as util
 import src.road as road
 from .road import Direction
 
@@ -20,6 +19,9 @@ class CarInFront(enum.Enum):
 
 
 class Car(Agent):
+    LENGTH = 4.4  # in meters
+    WIDTH = 1.8  # in meters
+
     def __init__(self,
                  unique_id,
                  model,
@@ -206,7 +208,11 @@ class Car(Agent):
 
     @property
     def length(self):
-        return self.model.car_length
+        return self.LENGTH
+
+    @property
+    def width(self):
+        return self.WIDTH
 
     def distance_s(self, distance_abs, vel):
         return road.distance_in_seconds(distance_abs, vel)
@@ -240,7 +246,7 @@ class Car(Agent):
 
     def steer(self, vel, direction):
         """Steer in the specified direction, such that a complete lane-change can be performed in `lane_change_time`"""
-        vel[1] = direction * road.LANE_WIDTH / self.model.lane_change_time
+        vel[1] = direction * self.model.space.lane_width / self.model.lane_change_time
         return vel
 
     # def steer(self, vel, degrees):

@@ -3,7 +3,6 @@ import numpy as np
 import mesa
 from mesa.time import StagedActivation, RandomActivation
 
-import src.util as util
 import src.road as road
 from .car import Car
 import src.data as data
@@ -13,8 +12,6 @@ class Model(mesa.Model):
     """Traffic flow simulation with multiple lanes and lane-chaning."""
 
     BIAS_RIGHT_LANE_SECONDS = 1
-    CAR_LENGTH = 4.4  # in meters
-    CAR_WIDTH = 1.8  # in meters
     MAX_LANES = 10
 
     def __init__(self,
@@ -24,7 +21,6 @@ class Model(mesa.Model):
                  fraction_autonomous=0,
                  max_speed_mu=10,
                  max_speed_sigma=3,
-                 car_length=4.4,
                  min_spacing=2,
                  min_distance_mu=2,
                  min_distance_sigma=0,
@@ -58,8 +54,6 @@ class Model(mesa.Model):
         """
 
         super().__init__()
-        self.car_length = Model.CAR_LENGTH
-        self.car_width = Model.CAR_WIDTH
 
         np.random.seed(seed)
         self.reset_randomizer(seed)
