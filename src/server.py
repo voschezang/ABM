@@ -19,9 +19,9 @@ model_params = {
     "n_lanes":
     UserSettableParameter(UserSettableParameter.SLIDER, "Number of Lanes", 2,
                           1, Model.MAX_LANES, 1),
-    "flow":
+    "n_cars":
     UserSettableParameter(UserSettableParameter.SLIDER,
-                          "Flow (per lane per second)", .6, 0, 3, 0.05),
+                          "Number of cars", 10, 1, 100, 5),
     "max_speed_mu":
     UserSettableParameter(UserSettableParameter.SLIDER, "Maximum speed (km/h)",
                           120, 1, 150, 10),
@@ -60,7 +60,7 @@ chart = ChartModule(
         "Label": "Flow",
         "Color": "red"
     }],
-    data_collector_name="data_collector")
+    data_collector_name="data")
 
 server = ModularServer(Model, [car_canvas, chart], "Traffic simulation",
                        model_params)

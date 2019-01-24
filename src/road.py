@@ -85,6 +85,20 @@ class Road(ContinuousSpace):
     def is_right_of_center_of_lane(self, pos):
         return self.distance_from_center_of_lane(pos) > 0
 
+    def distance_toroidal(self, a, b, forward=True):
+        """Returns forward/backward distance (on a toroidal road) in meter from a to b
+
+        Note
+        ----
+        returned distance does not include car size, so distance is center-to-center
+        """
+        d = b.pos[0] - a.pos[0]
+        if not forward:
+            d *= -1
+        if d < 0:
+            d += self.length
+        return max(0, d - self.model.car_length)
+
     def distance_between_coordinates(self, a, b):
         return b[0] - a[0]
 
@@ -132,13 +146,14 @@ class Road(ContinuousSpace):
         for other_car in self.cars_in_lane(
                 lane if not lane is None else car.lane, exclude=car):
             for i, forward in enumerate([True, False]):
-                d = self.distance_between_objects(car, other_car)
-                # only include cars in front/back when looking forward/backward
-                if (forward and d < 0) or (not forward and d > 0):
-                    continue
-                # get the absolute distance when looking backward
-                if not forward:
-                    d *= -1
+                #d = self.distance_between_objects(car, other_car)
+                d = self.distance_toroidal(car, other_car, forward=forward)
+                # # only include cars in front/back when looking forward/backward
+                # if (forward and d < 0) or (not forward and d > 0):
+                #     continue
+                # # get the absolute distance when looking backward
+                # if not forward:
+                #     d *= -1
                 if d >= 0 and (cars[i] is None or d < distances[i]):
                     cars[i] = other_car
                     distances[i] = d

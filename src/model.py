@@ -2,7 +2,7 @@ import numpy as np
 
 import mesa
 from mesa.time import StagedActivation, RandomActivation
-from mesa.datacollection import DataCollector
+
 
 import src.util as util
 import src.road as road
@@ -20,7 +20,7 @@ class Model(mesa.Model):
                  length=1000,
                  lane_width=3.5,
                  n_lanes=1,
-                 flow=1,
+                 n_cars=10,
                  max_speed_mu=10,
                  max_speed_sigma=3,
                  car_length=5,
@@ -65,7 +65,8 @@ class Model(mesa.Model):
         self.verbose = verbose
 
         self.time_step = time_step
-        self.flow = self.probability_per(flow * n_lanes, seconds=1)
+        #self.flow = self.probability_per(flow * n_lanes, seconds=1)
+        self.n_cars = n_cars
         self.max_speed_mu = max_speed_mu / 3.6
         self.max_speed_sigma = max_speed_sigma
         self.car_length = car_length
@@ -79,7 +80,7 @@ class Model(mesa.Model):
         self.bias_right_lane_sigma = bias_right_lane_sigma
         self.lane_change_time = 2  # TODO use rotation matrix
 
-        self.space = road.Road(self, length, n_lanes, lane_width, torus=False)
+        self.space = road.Road(self, length, n_lanes, lane_width, torus=True)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
         # self.schedule = RandomActivation(self)
@@ -88,20 +89,45 @@ class Model(mesa.Model):
             shuffle=False,
             shuffle_between_stages=False)
 
-        self.data = data.Data()
-        self.data_collector = DataCollector(
-            model_reporters={
-                "Density": data.density,
-                "Flow":
-                data.flow  # TODO measuring the flow is maybe not necessary,
-                # since the flow rate is a parameter for the simulation,
-                # unless we want to measure the flow rate at another reference point
-            })
+        # create the data collector object
+        self.data = data.Data(flow_reference_point=length / 2)
+
+        self.make_agents()
 
     def step(self):
-        self.generate_cars()
+        #self.generate_cars()
         self.schedule.step()
-        self.data_collector.collect(self)
+        self.data.collect(self)
+
+    def make_agents(self):
+        """Create self.n_cars number of agents and add them to the model (space, schedule)"""
+
+        for i in range(self.n_cars):
+            x = self.random.random() * self.space.length
+            y = self.space.center_of_lane(self.random.randint(0, self.space.n_lanes-1))
+            pos = (x, y)
+
+            vel = np.array([self.max_speed_mu, 0])
+            max_speed = self.stochastic_params(
+                self.max_speed_mu, self.max_speed_sigma, seconds=None)
+            max_speed = np.clip(max_speed, self.max_speed_mu / 2, None)
+
+            min_distance = np.random.normal(self.min_distance_mu, self.min_distance_sigma)
+            # bias to go to the right lane (probability based, per minute)
+            bias_right_lane = self.stochastic_params(
+                self.bias_right_lane_mu,
+                self.bias_right_lane_sigma,
+                seconds=Model.BIAS_RIGHT_LANE_SECONDS)
+
+            p_slowdown = np.random.normal(self.p_slowdown, 0)
+
+            car = Car(self.next_id(), self, pos, vel, max_speed,
+                      bias_right_lane, min_distance, p_slowdown)
+
+            self.space.place_agent(car, car.pos)
+            self.schedule.add(car)
+
+
 
     def remove_car(self, car):
         self.space.remove_agent(car)

@@ -21,7 +21,7 @@ class CarInFront(enum.Enum):
 
 class Car(Agent):
     def __init__(self, unique_id, model, pos, vel, max_speed, bias_right_lane,
-                 min_distance):
+                 min_distance, p_slowdown):
         """Create an agent that represents a car
 
         Parameters
@@ -41,6 +41,7 @@ class Car(Agent):
         self.max_speed = max_speed
         self.bias_right_lane = bias_right_lane
         self.min_distance = min_distance
+        self.p_slowdown = p_slowdown
         self.lane = None
         self.target_lane = None
 
@@ -50,7 +51,14 @@ class Car(Agent):
 
     def move(self):
         self.vel = self.vel_next
-        self.pos += self.vel * self.model.time_step
+        pos_next = self.pos + self.vel * self.model.time_step
+
+        # check if car passed the flow measurement point
+        if self.pos[0] < self.model.data.flow_reference_point and \
+            pos_next[0] > self.model.data.flow_reference_point:
+            self.model.data.flow += 1
+
+        self.pos = pos_next
 
         if not self.model.space.torus and self.model.space.out_of_bounds(
                 self.pos):
@@ -184,7 +192,7 @@ class Car(Agent):
         return vel
 
     def will_randomly_slow_down(self):
-        return self.random.random() < self.model.p_slowdown
+        return self.random.random() < self.p_slowdown
 
     def random_slow_down(self, vel):
         vel[0] -= self.model.car_dec * self.model.time_step
