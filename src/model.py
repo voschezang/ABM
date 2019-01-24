@@ -114,12 +114,10 @@ class Model(mesa.Model):
                 # TODO use skill/style to determine max_speed, min_distance, p_slowdown
                 max_speed = self.stochastic_params(
                     self.max_speed_mu, self.max_speed_sigma, seconds=None)
-
                 min_distance = np.random.normal(self.min_distance_mu,
                                                 self.min_distance_sigma)
-
+                distance_error_sigma = 0.1
                 p_slowdown = np.random.normal(self.p_slowdown, 0)
-
                 # bias right lane same for all normal cars
                 bias_right_lane = self.probability_per(
                     self.bias_right_lane, self.BIAS_RIGHT_LANE_SECONDS)
@@ -129,16 +127,15 @@ class Model(mesa.Model):
                 autonomous = True
                 # TODO choose values/distributions for autonomous cars
                 max_speed = self.max_speed_mu
-
                 min_distance = self.min_distance_mu
-
+                distance_error_sigma = 0
                 p_slowdown = 0
-
                 bias_right_lane = 1
 
             # create the car agent
             car = Car(self.next_id(), self, pos, vel, max_speed,
-                      bias_right_lane, min_distance, p_slowdown, autonomous)
+                      bias_right_lane, min_distance, distance_error_sigma,
+                      p_slowdown, autonomous)
             self.add_car(car)
 
     def add_car(self, car):
@@ -159,6 +156,7 @@ class Model(mesa.Model):
 
     def stochastic_params(self, mean, sigma=1, pos=True, seconds=1):
         # returns a stochastic parameter
+        # TODO use build-in random
         p = np.random.normal(mean, sigma)
         if pos:
             p = np.clip(p, 0, None)

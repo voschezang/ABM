@@ -49,6 +49,11 @@ def distance_in_seconds(distance_abs, vel_self, vel_other=None):
     return distance_abs / vel
 
 
+def distance_in_meters(distance_s, vel):
+    # convert min_spacing (relative distance to a coordinate, in s) to distance in meters
+    return distance_s * vel[0]
+
+
 class Road(ContinuousSpace):
     LANE_WIDTH = 3.5  # in meters.
 
