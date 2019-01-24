@@ -10,6 +10,7 @@ Code:
 - autonomous agents
  - better params (e.g. no reaction time, no standard deviation, no random slowdown)
  - communication (e.g. accelerate to global average of autonomous (nearby) cars)
+ - make `lane_change_time` dependent on current velocity (cars that have zero velocity should take longer to change lanes)
 
 Papers zoeken:
 - [Nagel-Schreckenberg](https://en.wikipedia.org/wiki/Nagel%E2%80%93Schreckenberg_model)
