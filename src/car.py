@@ -209,21 +209,12 @@ class Car(Agent):
 
     def distance_s(self, distance_abs, vel):
         return road.distance_in_seconds(distance_abs, vel)
-    
-    def estimation_error(self):
-        a = 2 / self.distance_error_sigma
-        b = 2 / (self.distance_error_sigma ** 2)
-        x = - (a / b) - (2 * self.random.random() + (a / b) ** 2) ** 0.5
-        if self.random.random() < 0.5:
-            return - x
-        return x
         
     def distance_rel_s(self, distance_abs, vel, other_car):
         d = road.distance_in_seconds(distance_abs, vel, other_car.vel)
-        #return d * (1 + self.distance_rel_error)
-        if self.distance_error_sigma != 0:
-            return d * (1 + self.estimation_error())
-        return d
+        #return d * (1 + self.distance_rel_error)            
+        return d * (1 + self.random.triangular(-self.distance_error_sigma, 
+                                                   0, self.distance_error_sigma))
 
     def try_steer_to_lane(self, vel, neighbours, lane):
         """Returns whether steering to lane is possible and the new velocity."""
