@@ -221,7 +221,9 @@ class Car(Agent):
     def distance_rel_s(self, distance_abs, vel, other_car):
         d = road.distance_in_seconds(distance_abs, vel, other_car.vel)
         #return d * (1 + self.distance_rel_error)
-        return d * (1 + self.estimation_error())
+        if self.distance_error_sigma != 0:
+            return d * (1 + self.estimation_error())
+        return 0
 
     def try_steer_to_lane(self, vel, neighbours, lane):
         """Returns whether steering to lane is possible and the new velocity."""
