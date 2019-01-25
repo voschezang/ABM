@@ -89,7 +89,7 @@ class Car(Agent):
         e = self.distance_rel_error
         f = self.distance_error_sigma * np.random.randn()
         m = self.distance_max_abs_rel_error
-        self.distance_rel_error = np.clip(e + f, 1-m, 1+m)
+        self.distance_rel_error = np.clip(e + f, -m, m)
 
     def update_vel_next(self):
         """update the property `vel_next`: the intended velocity of agent based of the current state."""
@@ -112,7 +112,6 @@ class Car(Agent):
             if needs_to_brake == CarInFront.no:
                 # go to right lane (if possible) with a certain probability (bias)
                 if self.random.random() < self.bias_right_lane:
-                    print(self.unique_id)
                     _, vel_next = self.try_steer_to_lane(
                         vel_next, neighbours, self.lane + Direction.R)
 
