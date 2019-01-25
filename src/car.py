@@ -6,8 +6,6 @@ from mesa import Agent
 import src.road as road
 from .road import Direction
 
-# TODO vision in seconds? or min_distance-backward in seconds?
-
 
 class CarInFront(enum.Enum):
     """
@@ -59,6 +57,8 @@ class Car(Agent):
         self.autonomous = autonomous
         self.lane = None
         self.target_lane = None
+        self.distance_rel_error = 0
+        self.distance_max_abs_rel_error = 0.1  # in %/100
 
     @property
     def length(self):
@@ -69,6 +69,7 @@ class Car(Agent):
         return self.WIDTH
 
     def step(self):
+        self.update_distance_relative_error()
         self.update_vel_next()
         self.move()
 
@@ -84,6 +85,12 @@ class Car(Agent):
         self.pos = pos_next
         self.model.space.move_agent(self, self.pos)
 
+    def update_distance_rel_error(self):
+        e = self.distance_rel_error
+        f = self.distance_error_sigma * np.random.randn()
+        m = self.distance_max_abs_rel_error
+        self.distance_rel_error = np.clip(e + f, -m, m)
+
     def update_vel_next(self):
         """update the property `vel_next`: the intended velocity of agent based of the current state."""
 
@@ -94,14 +101,13 @@ class Car(Agent):
         neighbours = self.model.space.all_neighbours(self)
 
         ### check if current car would need to brake, because there is a car in front
-        needs_to_brake, distance = self.needs_to_brake(
+        needs_to_brake, distances = self.needs_to_brake(
             vel_next, neighbours.f_d, neighbours.f)
 
         ### lane-chaning and braking logic
 
         # if not changing lane
         if self.target_lane == None:
-
             # if no need to brake
             if needs_to_brake == CarInFront.no:
                 # go to right lane (if possible) with a certain probability (bias)
@@ -114,7 +120,7 @@ class Car(Agent):
                 success, vel_next = self.try_steer_to_lane(
                     vel_next, neighbours, self.lane + Direction.L)
                 if not success:
-                    vel_next = self.brake(needs_to_brake, vel_next, distance,
+                    vel_next = self.brake(needs_to_brake, vel_next, distances,
                                           neighbours.f)
 
         # if changing lane and on target_lane
@@ -123,7 +129,7 @@ class Car(Agent):
 
             # if needs to brake
             if needs_to_brake != CarInFront.no:
-                vel_next = self.brake(needs_to_brake, vel_next, distance,
+                vel_next = self.brake(needs_to_brake, vel_next, distances,
                                       neighbours.f)
 
         # if changing lane and not on target_lane
@@ -136,7 +142,7 @@ class Car(Agent):
 
             # if needs to brake
             if needs_to_brake != CarInFront.no:
-                vel_next = self.brake(needs_to_brake, vel_next, distance,
+                vel_next = self.brake(needs_to_brake, vel_next, distances,
                                       neighbours.f)
 
         ### randomly slow down
@@ -155,33 +161,29 @@ class Car(Agent):
         return vel
 
     def needs_to_brake(self, vel, distance_abs, other_car=None):
-        """Returns a a tuple (CarInFront, distance in s | in m)
+        """Returns a a tuple (CarInFront, info_dict) with
+        info_dict : default_dict(None){
+            CarInFront.min_spacing: distance_abs,
+            CarInFront.min_relative_distance: distance_del_s
+          }
         """
-        # TODO use reaction time
-        no = (CarInFront.no, None)
+        d = collections.defaultdict(None)
         if other_car is None:
-            return no
-        if not self.is_inside_vision_range(distance_abs, vel):
-            return no
+            return (CarInFront.no, d)
 
         distance_s = self.distance_s(distance_abs, vel)
         if distance_s < self.model.min_spacing + self.model.time_step:
-            return (CarInFront.min_spacing, distance_abs)
+            d['distance_abs'] = distance_abs
+            return (CarInFront.min_spacing, d)
 
-        distance_rel = self.distance_rel_s(distance_abs, vel, other_car)
-        if distance_rel >= 0 and distance_rel < self.min_distance:
-            return (CarInFront.min_relative_distance, distance_rel)
+        distance_rel_s = self.distance_rel_s(distance_abs, vel, other_car)
+        if distance_rel_s >= 0 and distance_rel_s < self.min_distance:
+            d['distance_rel_s'] = distance_rel_s
+            return (CarInFront.min_relative_distance, d)
 
         return no
 
-    def is_inside_vision_range(self, distance_abs, vel):
-        # TODO use limited vision (in s) param
-        vision = 200
-        distance_s = road.distance_in_seconds(distance_abs, vel)
-        # distance_s = road.distance_in_seconds(distance_abs, -vel)
-        return distance_s < vision
-
-    def brake(self, reason, vel, distance, other_car):
+    def brake(self, reason, vel, distances, other_car):
         # def brake(self, reason, vel, distance_abs, other_car):
         if vel[0] <= 0:
             vel[0] = 0
@@ -190,18 +192,16 @@ class Car(Agent):
         if reason == CarInFront.no:
             pass
         elif reason == CarInFront.min_spacing:
-            distance_abs = distance
-            # distance - vel[0] * time_step = vel[0] * min_spacing
-            vel_new = distance_abs / (
+            distance_abs = distances['distance_abs']
+            # compute a value for vel[0] s.t.:
+            #  distance - vel[0] * time_step = vel[0] * min_spacing
+            vel[0] = distance_abs / (
                 self.model.time_step + self.model.min_spacing)
-            d_vel = max(self.model.car_dec, self.vel[0] - vel_new)
-            vel[0] = self.vel[0] - d_vel
 
         elif reason == CarInFront.min_relative_distance:
-            distance_rel_s = distance
-            assert (distance_rel_s > 0)
+            distance_rel_s = distances['distance_rel_s']
             d_vel_rel = distance_rel_s / self.min_distance
-            d_vel = max(self.model.car_dec, d_vel_rel) * self.model.time_step
+            d_vel = min(self.model.car_dec, d_vel_rel) * self.model.time_step
             vel[0] = self.vel[0] * (1 - d_vel)
 
         return vel
@@ -214,51 +214,45 @@ class Car(Agent):
         return vel
 
     def distance_s(self, distance_abs, vel):
-        d = road.distance_in_seconds(distance_abs, vel)
-        if self.autonomous:
-            return d
-        return d * self.distance_error_factor()
+        return road.distance_in_seconds(distance_abs, vel)
 
     def distance_rel_s(self, distance_abs, vel, other_car):
         d = road.distance_in_seconds(distance_abs, vel, other_car.vel)
-        if self.autonomous:
-            return d
-        return d * self.distance_error_factor()
-
-    def distance_error_factor(self):
-        # TODO prevent small timesteps from averaging out the error
-        return 1 + self.distance_error_sigma * np.random.randn()
+        return d * self.distance_rel_error
 
     def try_steer_to_lane(self, vel, neighbours, lane):
-        """Returns whether steering to lane was successful and the new velocity."""
+        """Returns whether steering to lane is possible and the new velocity."""
+        if self.pos[1] > self.model.space.center_of_lane(lane):
+            direction = Direction.L
+        else:
+            direction = Direction.R
+
         if not self.model.space.lane_exists(lane):
             return (False, vel)
+        elif not self.can_steer_to_lane(vel, neighbours, direction):
+            return (False, vel)
 
-        # direction of the lane change (-1: left, 0: current, +1: right)
-        direction = lane - self.lane
+        vel = self.steer(vel, direction)
+        self.target_lane = lane
+        return (True, vel)
 
+    def can_steer_to_lane(self, vel, neighbours, direction):
         # get the neighbours (f: front, b: back) in the target lane
         f, b = neighbours.in_direction(direction)
         f_d, b_d = neighbours.distances(direction)
-
-        # check if there is space for overtaking
-        if not f or f_d > vel[0] * (self.model.time_step + self.min_distance):
-            if not b or b_d > b.vel[0] * (
-                    self.model.time_step + self.min_distance):
-                movement_direction = Direction.L if self.pos[1] > self.model.space.center_of_lane(
-                    lane) else Direction.R
-                vel = self.steer(vel, movement_direction)
-                self.target_lane = lane
-                return (True, vel)
-
-        return (False, vel)
+        if f and f_d < vel[0] * (self.model.time_step + self.min_distance):
+            return False
+        elif b and b_d < b.vel[0] * (self.model.time_step + self.min_distance):
+            return False
+        return True
 
     def steer(self, vel, direction):
         """Steer in the specified direction, such that a complete lane-change can be performed in `lane_change_time`"""
+        # TODO decrease vel in x dimension (rotation matrix)
         vel[1] = direction * self.model.space.lane_width / self.model.lane_change_time
         return vel
 
-    # def steer(self, vel, degrees):
+    # def steer(self, vel, degrees): TODO implement
     #     """Rotate the velocity vector with a number of degrees."""
     #     # example:
     #     # change lanes in 2 seconds, determine angle
