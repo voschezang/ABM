@@ -112,6 +112,7 @@ class Car(Agent):
             if needs_to_brake == CarInFront.no:
                 # go to right lane (if possible) with a certain probability (bias)
                 if self.random.random() < self.bias_right_lane:
+                    print(self.unique_id)
                     _, vel_next = self.try_steer_to_lane(
                         vel_next, neighbours, self.lane + Direction.R)
 
@@ -165,8 +166,9 @@ class Car(Agent):
           }
         """
         d = collections.defaultdict(None)
+        no = (CarInFront.no, d)
         if other_car is None:
-            return (CarInFront.no, d)
+            return no
 
         distance_s = self.distance_s(distance_abs, vel)
         if distance_s < self.model.min_spacing + self.model.time_step:
@@ -210,7 +212,7 @@ class Car(Agent):
 
     def distance_rel_s(self, distance_abs, vel, other_car):
         d = road.distance_in_seconds(distance_abs, vel, other_car.vel)
-        return d * self.distance_rel_error
+        return d * (1 + self.distance_rel_error)
 
     def try_steer_to_lane(self, vel, neighbours, lane):
         """Returns whether steering to lane is possible and the new velocity."""
