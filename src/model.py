@@ -8,6 +8,21 @@ from .car import Car
 import src.data as data
 
 
+def gamma(mu, sigma=1, seconds=1):
+    # mu = k * theta
+    # alpha = k
+    # beta = 1 / theta
+    # sigma = sqrt(alpha) / beta     (standard deviation)
+    #  = sqrt(k) * theta
+    #  = sqrt(k) * mu / k
+    # sigma / mu = k^0.5 * k^-1 = k^-1.5
+    # k = (sigma / mu)^(1 / -1.5)
+    #  = (sigma / mu)^(-2/3)
+    k = (sigma / mu)**(-2 / 3)
+    theta = mu / k
+    return np.random.gamma(shape=k, scale=theta)
+
+
 class Model(mesa.Model):
     """Traffic flow simulation with multiple lanes and lane-chaning."""
 
@@ -122,8 +137,8 @@ class Model(mesa.Model):
                 distance_error_sigma = self.max_abs_rel_est_error * (1 - skill)
                 p_slowdown = 0.05 * self.p_slowdown + 0.95 * self.p_slowdown * (
                     1 - skill)
-                #distance_error_sigma = 0.01
-                #p_slowdown = np.random.normal(self.p_slowdown, 0)
+                # distance_error_sigma = 0.01
+                # p_slowdown = np.random.normal(self.p_slowdown, 0)
                 # bias right lane same for all normal cars
                 bias_right_lane = self.probability_per(
                     self.bias_right_lane, self.BIAS_RIGHT_LANE_SECONDS)
@@ -151,10 +166,10 @@ class Model(mesa.Model):
 
     def stochastic_params(self, mean, sigma=1, pos=True, seconds=1):
         # returns a stochastic parameter
-        # TODO use build-in random
-        p = np.random.normal(mean, sigma)
         if pos:
-            p = np.clip(p, 0, None)
+            p = gamma(mean, sigma)
+        else:
+            p = np.random.normal(mean, sigma)
         if seconds:
             p = self.probability_per(p, seconds)
         return p
