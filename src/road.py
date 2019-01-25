@@ -13,7 +13,7 @@ class Direction(IntEnum):
 
 class Neighbours:
     def __init__(self, left, current, right):
-        """Store the neighbours (and distances) per lane (Left, Current, Right)""" 
+        """Store the neighbours (and distances) per lane (Left, Current, Right)"""
         self._cars = [left[0], current[0], right[0]]
         self._distances = [left[1], current[1], right[1]]
 
@@ -27,11 +27,11 @@ class Neighbours:
     def f(self):
         """Neighbour in front."""
         return self._cars[1][0]
+
     @property
     def f_d(self):
         """Distance to the neighbour in front."""
         return self._distances[1][0]
-
 
 
 def distance_in_seconds(distance_abs, vel_self, vel_other=None):
@@ -49,14 +49,20 @@ def distance_in_seconds(distance_abs, vel_self, vel_other=None):
     return distance_abs / vel
 
 
+def distance_in_meters(distance_s, vel):
+    # convert min_spacing (relative distance to a coordinate, in s) to distance in meters
+    return distance_s * vel[0]
+
+
 class Road(ContinuousSpace):
-    def __init__(self, model, length, n_lanes, lane_width, torus):
-        super().__init__(length, n_lanes * lane_width, torus)
+    LANE_WIDTH = 3.5  # in meters.
+
+    def __init__(self, model, length, n_lanes, torus):
+        super().__init__(length, n_lanes * self.lane_width, torus)
 
         self.length = length
         self.model = model
         self.n_lanes = n_lanes
-        self.lane_width = lane_width
 
     # override
     def place_agent(self, agent, pos):
@@ -67,6 +73,10 @@ class Road(ContinuousSpace):
     def move_agent(self, agent, pos):
         super().move_agent(agent, pos)
         agent.lane = self.lane_at(pos)
+
+    @property
+    def lane_width(self):
+        return self.LANE_WIDTH
 
     def lane_at(self, pos):
         """Returns the lane number of a position"""
@@ -85,17 +95,18 @@ class Road(ContinuousSpace):
     def is_right_of_center_of_lane(self, pos):
         return self.distance_from_center_of_lane(pos) > 0
 
+    def distance_between_coordinates(self, a, b):
+        return b[0] - a[0]
+
     def distance_toroidal(self, a, b, forward=True):
         """Returns forward/backward distance (on a toroidal road) in meter from a to b"""
-        d = b.pos[0] - a.pos[0]
+        d = self.distance_between_coordinates(a.pos, b.pos)
         if not forward:
             d *= -1
         if d < 0:
             d += self.length
-        return max(0, d - self.model.car_length)
-
-    def distance_between_coordinates(self, a, b):
-        return b[0] - a[0]
+        ln = (a.length + b.length) / 2
+        return max(0, d - ln)
 
     def distance_between_objects(self, a, b):
         assert (not self.torus)  # not implemented
@@ -122,7 +133,7 @@ class Road(ContinuousSpace):
         cars = self.cars_in_lane(lane)
         if not cars:
             return None
-        return min(cars, key= lambda car: car.pos[0])
+        return min(cars, key=lambda car: car.pos[0])
 
     def neighbours(self, car, lane=None):
         """Get the first car in a lane in front and back, and the absolute distances (in m) to them if they exist (-1 as default).
@@ -157,6 +168,7 @@ class Road(ContinuousSpace):
 
     def all_neighbours(self, car):
         """Return all neighbours for a car"""
-        return Neighbours(*[self.neighbours(car, car.lane + i) for i in [Direction.L, Direction.C, Direction.R]])
-
-  
+        return Neighbours(*[
+            self.neighbours(car, car.lane + i)
+            for i in [Direction.L, Direction.C, Direction.R]
+        ])
