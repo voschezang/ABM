@@ -57,8 +57,8 @@ class Car(Agent):
         self.autonomous = autonomous
         self.lane = None
         self.target_lane = None
-        #self.distance_rel_error = 0
-        #self.distance_max_abs_rel_error = 0.1  # in %/100
+        self.distance_rel_error = 0
+        self.distance_max_abs_rel_error = 0.1  # in %/100
 
     @property
     def length(self):
@@ -85,12 +85,13 @@ class Car(Agent):
         self.pos = pos_next
         self.model.space.move_agent(self, self.pos)
 
-    #def update_distance_rel_error(self):
-    #    e = self.distance_rel_error
-    #    f = self.distance_error_sigma * np.random.randn()
-    #    dt = self.model.time_step
-    #    m = self.distance_max_abs_rel_error
-    #    self.distance_rel_error = np.clip(e + f * dt, -m, m)
+    def update_distance_rel_error(self):
+        e = self.distance_rel_error
+        f = self.distance_error_sigma * self.random.triangular(-self.distance_error_sigma, 
+                                                   0, self.distance_error_sigma)
+        dt = self.model.time_step
+        m = self.distance_max_abs_rel_error
+        self.distance_rel_error = np.clip(e + f * dt, -m, m)
 
     def update_vel_next(self):
         """update the property `vel_next`: the intended velocity of agent based of the current state."""
@@ -212,9 +213,7 @@ class Car(Agent):
         
     def distance_rel_s(self, distance_abs, vel, other_car):
         d = road.distance_in_seconds(distance_abs, vel, other_car.vel)
-        #return d * (1 + self.distance_rel_error)            
-        return d * (1 + self.random.triangular(-self.distance_error_sigma, 
-                                                   0, self.distance_error_sigma))
+        return d * (1 + self.distance_rel_error)            
 
     def try_steer_to_lane(self, vel, neighbours, lane):
         """Returns whether steering to lane is possible and the new velocity."""
