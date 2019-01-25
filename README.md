@@ -6,11 +6,11 @@ Code:
 - plot interesting data (in notebook)
  - e.g. aantal kilometer-uur file als functie van density/flow/n_lanes
 - global sensitivity analysis
-- implement reaction time (but how?)
+- ~~implement reaction time~~
+- make `lane_change_time` dependent on current velocity (cars that have zero velocity should take longer to change lanes)
 - autonomous agents
- - better params (e.g. no reaction time, no standard deviation, no random slowdown)
- - communication (e.g. accelerate to global average of autonomous (nearby) cars)
- - make `lane_change_time` dependent on current velocity (cars that have zero velocity should take longer to change lanes)
+ - - communication (e.g. accelerate to global average of autonomous (nearby) cars)
+
 
 Papers zoeken:
 - [Nagel-Schreckenberg](https://en.wikipedia.org/wiki/Nagel%E2%80%93Schreckenberg_model)
