@@ -72,13 +72,15 @@ class Model(mesa.Model):
         self.p_slowdown = self.probability_per(p_slowdown, seconds=3600)
         self.bias_right_lane = bias_right_lane
         self.lane_change_time = 2  # TODO use rotation matrix
+        self.max_abs_rel_est_error = 0.04
 
         self.space = road.Road(self, length, n_lanes, torus=True)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
         # self.schedule = RandomActivation(self)
         self.schedule = StagedActivation(
-            self, ["update_distance_rel_error", "update_vel_next", "move"],
+            self, #["update_distance_rel_error", 
+            ["update_vel_next", "move"],
             shuffle=False,
             shuffle_between_stages=False)
 
@@ -116,8 +118,12 @@ class Model(mesa.Model):
                     self.max_speed_mu, self.max_speed_sigma, seconds=None)
                 min_distance = np.random.normal(self.min_distance_mu,
                                                 self.min_distance_sigma)
-                distance_error_sigma = 0.01
-                p_slowdown = np.random.normal(self.p_slowdown, 0)
+               
+                skill = (np.random.random()) ** 0.5
+                distance_error_sigma = self.max_abs_rel_est_error * (1 - skill)
+                p_slowdown = 0.05 * self.p_slowdown + 0.95 * self.p_slowdown * (1 - skill)
+                #distance_error_sigma = 0.01
+                #p_slowdown = np.random.normal(self.p_slowdown, 0)
                 # bias right lane same for all normal cars
                 bias_right_lane = self.probability_per(
                     self.bias_right_lane, self.BIAS_RIGHT_LANE_SECONDS)
