@@ -87,8 +87,8 @@ class Car(Agent):
 
     def update_distance_rel_error(self):
         e = self.distance_rel_error
-        f = self.distance_error_sigma * self.random.triangular(
-            -self.distance_error_sigma, 0, self.distance_error_sigma)
+        f = self.random.triangular(-self.distance_error_sigma, 0,
+                                   self.distance_error_sigma)
         dt = self.model.time_step
         m = self.distance_max_abs_rel_error
         self.distance_rel_error = np.clip(e + f * dt, -m, m)
@@ -212,8 +212,9 @@ class Car(Agent):
         return road.distance_in_seconds(distance_abs, vel)
 
     def distance_rel_s(self, distance_abs, vel, other_car):
-        d = road.distance_in_seconds(distance_abs, vel, other_car.vel)
-        return d * (1 + self.distance_rel_error)
+        error_factor = 1 + self.distance_rel_error
+        other_vel = other_car.vel * error_factor
+        return road.distance_in_seconds(distance_abs, vel, other_vel)
 
     def try_steer_to_lane(self, vel, neighbours, lane):
         """Returns whether steering to lane is possible and the new velocity."""
