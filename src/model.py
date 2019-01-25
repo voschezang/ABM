@@ -112,7 +112,7 @@ class Model(mesa.Model):
             # if normal car
             if i < normal_cars:
                 # TODO use skill/style to determine max_speed, min_distance, p_slowdown
-                max_speed = self.stochastic_params(
+                preferred_speed = self.stochastic_params(
                     self.max_speed_mu, self.max_speed_sigma, seconds=None)
                 min_distance = np.random.normal(self.min_distance_mu,
                                                 self.min_distance_sigma)
@@ -126,14 +126,14 @@ class Model(mesa.Model):
             else:
                 autonomous = True
                 # TODO choose values/distributions for autonomous cars
-                max_speed = self.max_speed_mu
+                preferred_speed = self.max_speed_mu
                 min_distance = self.min_distance_mu
                 distance_error_sigma = 0
                 p_slowdown = 0
                 bias_right_lane = 1
 
             # create the car agent
-            car = Car(self.next_id(), self, pos, vel, max_speed,
+            car = Car(self.next_id(), self, pos, vel, preferred_speed,
                       bias_right_lane, min_distance, distance_error_sigma,
                       p_slowdown, autonomous)
             self.add_car(car)

@@ -25,7 +25,7 @@ class Car(Agent):
                  model,
                  pos,
                  vel,
-                 max_speed,
+                 preferred_speed,
                  bias_right_lane,
                  min_distance,
                  distance_error_sigma,
@@ -39,7 +39,7 @@ class Car(Agent):
         model -- reference to the model the agent is part of.
         pos -- tuple of current position of the car.
         vel -- tuple of current x,y velocities of the car.
-        max_speed -- in m/s.
+        preferred_speed -- in m/s.
         bias_right_lane -- bias to move to the right-hand lane in range [0,1].
         minimal_distance -- in time units.
         p_slowdown -- probability of random slowing down in a timestep.
@@ -49,7 +49,7 @@ class Car(Agent):
         super().__init__(unique_id, model)
         self.pos = np.array(pos, dtype=float)
         self.vel = np.array(vel, dtype=float)
-        self.max_speed = max_speed
+        self.preferred_speed = preferred_speed
         self.bias_right_lane = bias_right_lane
         self.min_distance = min_distance
         self.distance_error_sigma = distance_error_sigma
@@ -155,7 +155,7 @@ class Car(Agent):
     def accelerate_vel(self, vel):
         # returns accelerated vel, upper limited by the maximum speed
         vel[0] = min(vel[0] + self.model.car_acc * self.model.time_step,
-                     self.max_speed)
+                     self.preferred_speed)
         return vel
 
     def needs_to_brake(self, vel, distance_abs, other_car=None):
