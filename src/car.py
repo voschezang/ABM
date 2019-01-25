@@ -89,7 +89,7 @@ class Car(Agent):
         e = self.distance_rel_error
         f = self.distance_error_sigma * np.random.randn()
         m = self.distance_max_abs_rel_error
-        self.distance_rel_error = np.clip(e + f, -m, m)
+        self.distance_rel_error = np.clip(e + f, 1-m, 1+m)
 
     def update_vel_next(self):
         """update the property `vel_next`: the intended velocity of agent based of the current state."""
@@ -120,8 +120,7 @@ class Car(Agent):
                 success, vel_next = self.try_steer_to_lane(
                     vel_next, neighbours, self.lane + Direction.L)
                 if not success:
-                    vel_next = self.brake(needs_to_brake, vel_next, distances,
-                                          neighbours.f)
+                    vel_next = self.brake(needs_to_brake, vel_next, distances)
 
         # if changing lane and on target_lane
         elif self.lane == self.target_lane:
@@ -129,8 +128,7 @@ class Car(Agent):
 
             # if needs to brake
             if needs_to_brake != CarInFront.no:
-                vel_next = self.brake(needs_to_brake, vel_next, distances,
-                                      neighbours.f)
+                vel_next = self.brake(needs_to_brake, vel_next, distances)
 
         # if changing lane and not on target_lane
         else:
@@ -142,8 +140,7 @@ class Car(Agent):
 
             # if needs to brake
             if needs_to_brake != CarInFront.no:
-                vel_next = self.brake(needs_to_brake, vel_next, distances,
-                                      neighbours.f)
+                vel_next = self.brake(needs_to_brake, vel_next, distances)
 
         ### randomly slow down
         if self.will_randomly_slow_down():
@@ -181,14 +178,9 @@ class Car(Agent):
             d['distance_rel_s'] = distance_rel_s
             return (CarInFront.min_relative_distance, d)
 
-        return no
+        return (CarInFront.no, d)
 
-    def brake(self, reason, vel, distances, other_car):
-        # def brake(self, reason, vel, distance_abs, other_car):
-        if vel[0] <= 0:
-            vel[0] = 0
-            return vel
-
+    def brake(self, reason, vel, distances):
         if reason == CarInFront.no:
             pass
         elif reason == CarInFront.min_spacing:
