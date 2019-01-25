@@ -79,8 +79,7 @@ class Model(mesa.Model):
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
         # self.schedule = RandomActivation(self)
         self.schedule = StagedActivation(
-            self, #["update_distance_rel_error", 
-            ["update_vel_next", "move"],
+            self, ["update_distance_rel_error", "update_vel_next", "move"],
             shuffle=False,
             shuffle_between_stages=False)
 
