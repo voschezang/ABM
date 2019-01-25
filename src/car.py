@@ -69,7 +69,7 @@ class Car(Agent):
         return self.WIDTH
 
     def step(self):
-        self.update_distance_relative_error()
+        self.update_distance_rel_error()
         self.update_vel_next()
         self.move()
 
@@ -88,8 +88,9 @@ class Car(Agent):
     def update_distance_rel_error(self):
         e = self.distance_rel_error
         f = self.distance_error_sigma * np.random.randn()
+        dt = self.model.time_step
         m = self.distance_max_abs_rel_error
-        self.distance_rel_error = np.clip(e + f, -m, m)
+        self.distance_rel_error = np.clip(e + f * dt, -m, m)
 
     def update_vel_next(self):
         """update the property `vel_next`: the intended velocity of agent based of the current state."""
