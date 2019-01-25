@@ -143,17 +143,6 @@ class Model(mesa.Model):
         self.space.place_agent(car, car.pos)
         self.schedule.add(car)
 
-    def delay_time_to_probability(self, T=0):
-        """Return the probability required to simulate a delay in communication
-        used to simulate reaction time
-        T: period (interval time)
-        f = 1/T
-        """
-        T_in_time_steps = T / self.time_step
-        frequency = 1 / T_in_time_steps
-        probability = frequency
-        return probability
-
     def stochastic_params(self, mean, sigma=1, pos=True, seconds=1):
         # returns a stochastic parameter
         # TODO use build-in random
