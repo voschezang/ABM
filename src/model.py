@@ -18,7 +18,8 @@ def gamma(mu, sigma=1, seconds=1):
     # sigma / mu = k^0.5 * k^-1 = k^-1.5
     # k = (sigma / mu)^(1 / -1.5)
     #  = (sigma / mu)^(-2/3)
-    k = (sigma / mu)**(-2 / 3)
+    # k = (sigma / mu)**(-2 / 3)
+    k = (mu / sigma) ** 2
     theta = mu / k
     return np.random.gamma(shape=k, scale=theta)
 
