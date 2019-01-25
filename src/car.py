@@ -187,10 +187,9 @@ class Car(Agent):
         elif reason == CarInFront.min_spacing:
             distance_abs = distance
             # distance - vel[0] * time_step = vel[0] * min_spacing
-            vel_new = distance_abs / (
+            vel[0] = distance_abs / (
                 self.model.time_step + self.model.min_spacing)
-            d_vel = min(self.model.car_dec * self.model.time_step, self.vel[0] - vel_new)
-            vel[0] = self.vel[0] - d_vel
+
 
         elif reason == CarInFront.min_relative_distance:
             distance_rel_s = distance
@@ -209,10 +208,7 @@ class Car(Agent):
         return vel
 
     def distance_s(self, distance_abs, vel):
-        d = road.distance_in_seconds(distance_abs, vel)
-        if self.autonomous:
-            return d
-        return d * self.distance_error_factor()
+        return road.distance_in_seconds(distance_abs, vel)
 
     def distance_rel_s(self, distance_abs, vel, other_car):
         d = road.distance_in_seconds(distance_abs, vel, other_car.vel)
