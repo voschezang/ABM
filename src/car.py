@@ -223,7 +223,7 @@ class Car(Agent):
         #return d * (1 + self.distance_rel_error)
         if self.distance_error_sigma != 0:
             return d * (1 + self.estimation_error())
-        return 0
+        return d
 
     def try_steer_to_lane(self, vel, neighbours, lane):
         """Returns whether steering to lane is possible and the new velocity."""
