@@ -117,10 +117,11 @@ class Model(mesa.Model):
                     self.max_speed_mu, self.max_speed_sigma, seconds=None)
                 min_distance = np.random.normal(self.min_distance_mu,
                                                 self.min_distance_sigma)
-               
-                skill = (np.random.random()) ** 0.5
+
+                skill = (np.random.random())**0.5
                 distance_error_sigma = self.max_abs_rel_est_error * (1 - skill)
-                p_slowdown = 0.05 * self.p_slowdown + 0.95 * self.p_slowdown * (1 - skill)
+                p_slowdown = 0.05 * self.p_slowdown + 0.95 * self.p_slowdown * (
+                    1 - skill)
                 #distance_error_sigma = 0.01
                 #p_slowdown = np.random.normal(self.p_slowdown, 0)
                 # bias right lane same for all normal cars
