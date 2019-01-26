@@ -2,9 +2,10 @@ import numpy as np
 import collections
 import enum
 from mesa import Agent
+from typing import Tuple
 
 import src.road as road
-from .road import Direction
+from .road import Direction, Vel, Pos
 
 
 class CarInFront(enum.Enum):
@@ -23,14 +24,14 @@ class Car(Agent):
     def __init__(self,
                  unique_id,
                  model,
-                 pos,
-                 vel,
+                 pos: Pos,
+                 vel: Vel,
                  preferred_speed,
                  bias_right_lane,
                  min_distance,
                  distance_error_sigma,
                  p_slowdown,
-                 autonomous=False):
+                 autonomous: bool = False):
         """Create an agent that represents a car
 
         Parameters
@@ -61,11 +62,11 @@ class Car(Agent):
         self.distance_max_abs_rel_error = 0.1  # in %/100
 
     @property
-    def length(self):
+    def length(self) -> int:
         return self.LENGTH
 
     @property
-    def width(self):
+    def width(self) -> int:
         return self.WIDTH
 
     def step(self):
@@ -153,13 +154,14 @@ class Car(Agent):
 
         self.vel_next = vel_next
 
-    def accelerate_vel(self, vel):
+    def accelerate_vel(self, vel) -> Vel:
         # returns accelerated vel, upper limited by the maximum speed
         vel[0] = min(vel[0] + self.model.car_acc * self.model.time_step,
                      self.preferred_speed)
         return vel
 
-    def needs_to_brake(self, vel, distance_abs, other_car=None):
+    def needs_to_brake(self, vel, distance_abs, other_car=None
+                       ) -> Tuple[CarInFront, collections.defaultdict]:
         """Returns a a tuple (CarInFront, info_dict) with
         info_dict : default_dict(None){
             CarInFront.min_spacing: distance_abs,
@@ -183,7 +185,7 @@ class Car(Agent):
 
         return (CarInFront.no, d)
 
-    def brake(self, reason, vel, distances):
+    def brake(self, reason, vel, distances) -> Vel:
         if reason == CarInFront.no:
             pass
         elif reason == CarInFront.min_spacing:
@@ -201,22 +203,22 @@ class Car(Agent):
 
         return vel
 
-    def will_randomly_slow_down(self):
+    def will_randomly_slow_down(self) -> bool:
         return self.random.random() < self.p_slowdown
 
-    def random_slow_down(self, vel):
+    def random_slow_down(self, vel) -> Vel:
         vel[0] -= self.model.car_dec * self.model.time_step
         return vel
 
-    def distance_s(self, distance_abs, vel):
+    def distance_s(self, distance_abs, vel) -> float:
         return road.distance_in_seconds(distance_abs, vel)
 
-    def distance_rel_s(self, distance_abs, vel, other_car):
+    def distance_rel_s(self, distance_abs, vel, other_car) -> float:
         error_factor = 1 + self.distance_rel_error
         other_vel = other_car.vel * error_factor
         return road.distance_in_seconds(distance_abs, vel, other_vel)
 
-    def try_steer_to_lane(self, vel, neighbours, lane):
+    def try_steer_to_lane(self, vel, neighbours, lane) -> Tuple[bool, Vel]:
         """Returns whether steering to lane is possible and the new velocity."""
         if self.pos[1] > self.model.space.center_of_lane(lane):
             direction = Direction.L
@@ -232,7 +234,7 @@ class Car(Agent):
         self.target_lane = lane
         return (True, vel)
 
-    def can_steer_to_lane(self, vel, neighbours, direction):
+    def can_steer_to_lane(self, vel, neighbours, direction: Direction) -> bool:
         # get the neighbours (f: front, b: back) in the target lane
         f, b = neighbours.in_direction(direction)
         f_d, b_d = neighbours.distances(direction)
@@ -242,7 +244,7 @@ class Car(Agent):
             return False
         return True
 
-    def steer(self, vel, direction):
+    def steer(self, vel: Vel, direction: Direction) -> Vel:
         """Steer in the specified direction, such that a complete lane-change can be performed in `lane_change_time`"""
         # TODO decrease vel in x dimension (rotation matrix)
         vel[1] = direction * self.model.space.lane_width / self.model.lane_change_time
@@ -260,7 +262,7 @@ class Car(Agent):
     #     vel = rotation_matrix @ vel
     #     return vel
 
-    def center_on_current_lane(self, vel):
+    def center_on_current_lane(self, vel: Vel) -> Vel:
         d = self.model.space.distance_from_center_of_lane(self.pos)
         direction = Direction.L if self.model.space.is_right_of_center_of_lane(
             self.pos) else Direction.R

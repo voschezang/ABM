@@ -1,8 +1,12 @@
 import numpy as np
 from mesa.space import ContinuousSpace
-
 from enum import IntEnum
 from collections import namedtuple
+from typing import NewType, Union, List, Tuple
+
+Vel = NewType('Vel', np.array)
+Pos = NewType('Vel', np.array)
+MaybeVel = Union[None, np.array]
 
 
 class Direction(IntEnum):
@@ -34,7 +38,9 @@ class Neighbours:
         return self._distances[1][0]
 
 
-def distance_in_seconds(distance_abs, vel_self, vel_other=None):
+def distance_in_seconds(distance_abs: float,
+                        vel_self: Vel,
+                        vel_other: MaybeVel = None) -> float:
     """ Returns the distance to another object in seconds, assuming the object is moving with a constant velocity
     Velocity in the y-dimension is ignored
 
@@ -49,7 +55,7 @@ def distance_in_seconds(distance_abs, vel_self, vel_other=None):
     return distance_abs / vel
 
 
-def distance_in_meters(distance_s, vel):
+def distance_in_meters(distance_s: float, vel: Vel) -> float:
     # convert min_spacing (relative distance to a coordinate, in s) to distance in meters
     return distance_s * vel[0]
 
@@ -75,30 +81,30 @@ class Road(ContinuousSpace):
         agent.lane = self.lane_at(pos)
 
     @property
-    def lane_width(self):
+    def lane_width(self) -> int:
         return self.LANE_WIDTH
 
-    def lane_at(self, pos):
+    def lane_at(self, pos) -> int:
         """Returns the lane number of a position"""
         return int(pos[1] // self.lane_width)
 
-    def center_of_lane(self, lane):
+    def center_of_lane(self, lane: int) -> Pos:
         """Return the position of the center of a lane."""
         return (lane + 0.5) * self.lane_width
 
-    def lane_exists(self, lane):
+    def lane_exists(self, lane: int) -> bool:
         return lane >= 0 and lane < self.n_lanes
 
-    def distance_from_center_of_lane(self, pos):
+    def distance_from_center_of_lane(self, pos: Pos) -> float:
         return pos[1] % self.lane_width - self.lane_width / 2
 
-    def is_right_of_center_of_lane(self, pos):
+    def is_right_of_center_of_lane(self, pos) -> bool:
         return self.distance_from_center_of_lane(pos) > 0
 
-    def distance_between_coordinates(self, a, b):
+    def distance_between_coordinates(self, a: Pos, b: Pos) -> float:
         return b[0] - a[0]
 
-    def distance_toroidal(self, a, b, forward=True):
+    def distance_toroidal(self, a, b, forward=True) -> float:
         """Returns forward/backward distance (on a toroidal road) in meter from a to b"""
         d = self.distance_between_coordinates(a.pos, b.pos)
         if not forward:
@@ -108,7 +114,7 @@ class Road(ContinuousSpace):
         ln = (a.length + b.length) / 2
         return max(0, d - ln)
 
-    def distance_between_objects(self, a, b):
+    def distance_between_objects(self, a, b) -> float:
         assert (not self.torus)  # not implemented
         d = self.distance_between_coordinates(a.pos, b.pos)
         # assume pos indicates the front of the object
@@ -118,7 +124,7 @@ class Road(ContinuousSpace):
         else:
             return min(0, d + a.length)
 
-    def cars_in_lane(self, lane, exclude=[]):
+    def cars_in_lane(self, lane: int, exclude=[]) -> list:
         """Returns all cars in a certain lane (optionally excluding some cars)"""
         if not self.lane_exists(lane):
             return []
@@ -129,13 +135,13 @@ class Road(ContinuousSpace):
             if car.lane == lane and car not in exclude
         ]
 
-    def first_car_in_lane(self, lane):
+    def first_car_in_lane(self, lane: int):
         cars = self.cars_in_lane(lane)
         if not cars:
             return None
         return min(cars, key=lambda car: car.pos[0])
 
-    def neighbours(self, car, lane=None):
+    def neighbours(self, car, lane: int = None) -> Tuple[list, List[float]]:
         """Get the first car in a lane in front and back, and the absolute distances (in m) to them if they exist (-1 as default).
         Note that the car_length is subtracted for cars in front of the agent
 

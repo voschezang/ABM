@@ -30,9 +30,9 @@ class Model(mesa.Model):
     MAX_LANES = 10
 
     def __init__(self,
-                 length=1000,
-                 n_lanes=1,
-                 n_cars=10,
+                 length: int = 1000,
+                 n_lanes: int = 1,
+                 n_cars: int = 10,
                  fraction_autonomous=0,
                  max_speed_mu=120,
                  max_speed_sigma=3,
@@ -44,7 +44,7 @@ class Model(mesa.Model):
                  p_slowdown=0.1,
                  bias_right_lane=1,
                  time_step=0.1,
-                 seed=None,
+                 seed: int = None,
                  verbose=3):
         """Initialise the traffic model.
 
@@ -107,7 +107,7 @@ class Model(mesa.Model):
         self.schedule.step()
         self.data.collect(self)
 
-    def make_agents(self):
+    def make_agents(self) -> None:
         """Create self.n_cars number of agents and add them to the model (space, schedule)"""
 
         # x coordinates for the agents
