@@ -48,13 +48,14 @@ class Model(mesa.Model):
                  bias_right_lane=1,
                  time_step=0.1,
                  seed: int = None,
-                 verbose=3):
+                 verbose=3):    
         """Initialise the traffic model.
 
         Parameters
         ----------
         length -- length of the road in meters.
         n_lanes -- number of lanes.
+        density -- number of cars per 1000 meter road.
         n_cars -- number of cars on the road.
         fraction_autonomous -- fraction of `n_cars` that are autonomous vehicles.
         max_speed_mu -- maximum speed cars will try to travel at in km/h (will be converted to m/s).
@@ -78,7 +79,7 @@ class Model(mesa.Model):
         self.verbose = verbose
 
         self.time_step = time_step
-        self.n_cars = round(density * n_lanes * length)
+        self.n_cars = round(density * n_lanes * length / 1000)
         self.fraction_autonomous = fraction_autonomous
         self.max_speed_mu = max_speed_mu / 3.6
         self.max_speed_sigma = max_speed_sigma
