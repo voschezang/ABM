@@ -79,7 +79,8 @@ class Model(mesa.Model):
         self.verbose = verbose
 
         self.time_step = time_step
-        self.n_cars = round(density * n_lanes * length / 1000)
+        self.n_cars = int(round(density * length / 1000))
+        self.density = self.n_cars / length * 1000
         self.fraction_autonomous = fraction_autonomous
         self.max_speed_mu = max_speed_mu / 3.6
         self.max_speed_sigma = max_speed_sigma
@@ -119,7 +120,7 @@ class Model(mesa.Model):
             np.random.permutation(self.n_cars) + np.random.random(self.n_cars)
         ) / self.n_cars * self.space.length
 
-        normal_cars = int(self.n_cars * (1 - self.fraction_autonomous))
+        normal_cars = int(round(self.n_cars * (1 - self.fraction_autonomous)))
         autonomous_cars = self.n_cars - normal_cars
 
         for i in range(self.n_cars):
@@ -141,7 +142,6 @@ class Model(mesa.Model):
                 distance_error_sigma = self.max_abs_rel_est_error * (1 - skill)
                 p_slowdown = 0.05 * self.p_slowdown + 0.95 * self.p_slowdown * (
                     1 - skill)
-                # distance_error_sigma = 0.01
                 # p_slowdown = np.random.normal(self.p_slowdown, 0)
                 # bias right lane same for all normal cars
                 bias_right_lane = self.probability_per(
