@@ -19,6 +19,8 @@ def gamma(mu, sigma=1, seconds=1):
     # k = (sigma / mu)^(1 / -1.5)
     #  = (sigma / mu)^(-2/3)
     # k = (sigma / mu)**(-2 / 3)
+    if not sigma:
+        return mu
     k = (mu / sigma) ** 2
     theta = mu / k
     return np.random.gamma(shape=k, scale=theta)
@@ -33,7 +35,7 @@ class Model(mesa.Model):
     def __init__(self,
                  length: int = 1000,
                  n_lanes: int = 1,
-                 n_cars: int = 10,
+                 density: float = 0.01,
                  fraction_autonomous=0,
                  max_speed_mu=120,
                  max_speed_sigma=3,
@@ -76,7 +78,7 @@ class Model(mesa.Model):
         self.verbose = verbose
 
         self.time_step = time_step
-        self.n_cars = n_cars
+        self.n_cars = round(density * n_lanes * length)
         self.fraction_autonomous = fraction_autonomous
         self.max_speed_mu = max_speed_mu / 3.6
         self.max_speed_sigma = max_speed_sigma
