@@ -79,7 +79,7 @@ class Model(mesa.Model):
         self.verbose = verbose
 
         self.time_step = time_step
-        self.n_cars = round(density * n_lanes * length / 1000)
+        self.n_cars = int(round(density * n_lanes * length / 1000))
         self.fraction_autonomous = fraction_autonomous
         self.max_speed_mu = max_speed_mu / 3.6
         self.max_speed_sigma = max_speed_sigma
@@ -92,7 +92,7 @@ class Model(mesa.Model):
         self.bias_right_lane = bias_right_lane
         self.lane_change_time = 2  # TODO use rotation matrix
         self.max_abs_rel_est_error = 0.04
-
+        
         self.space = road.Road(self, length, n_lanes, torus=True)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
@@ -115,6 +115,7 @@ class Model(mesa.Model):
         """Create self.n_cars number of agents and add them to the model (space, schedule)"""
 
         # x coordinates for the agents
+        np.random.permutation(self.n_cars)
         xs = (
             np.random.permutation(self.n_cars) + np.random.random(self.n_cars)
         ) / self.n_cars * self.space.length
