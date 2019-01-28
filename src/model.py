@@ -35,7 +35,7 @@ class Model(mesa.Model):
     def __init__(self,
                  length: int = 1000,
                  n_lanes: int = 1,
-                 density: float = 0.01,
+                 density: float = 30,
                  fraction_autonomous=0,
                  max_speed_mu=120,
                  max_speed_sigma=3,
@@ -80,7 +80,7 @@ class Model(mesa.Model):
 
         self.time_step = time_step
         self.n_cars = int(round(density * n_lanes * length / 1000))
-        self.density = density
+        self.density = self.n_cars / (n_lanes * length / 1000)
         self.fraction_autonomous = fraction_autonomous
         self.max_speed_mu = max_speed_mu / 3.6
         self.max_speed_sigma = max_speed_sigma

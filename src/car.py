@@ -60,6 +60,10 @@ class Car(Agent):
         self.target_lane = None
         self.distance_rel_error = 0
         self.distance_max_abs_rel_error = 0.1  # in %/100
+        
+        self.startled = False
+        self.startled_pref_vel = 50/3.6
+        self.recup_turns = 0
 
     @property
     def length(self) -> int:
@@ -147,8 +151,19 @@ class Car(Agent):
 
         ### randomly slow down
         if self.will_randomly_slow_down():
-            self.random_slow_down(vel_next)
-
+            self.startled = True
+            self.recup_turns = 5
+        
+        if self.startled:
+            if (self.vel[0] > self.startled_pref_vel):
+                vel_next = self.random_slow_down(vel_next)
+            else:
+                vel_next = self.vel
+                self.recup_turns -= 1
+        
+        if self.recup_turns == 0:
+            self.startled == False
+                
         # prevent negative velocities
         vel_next[0] = max(0, vel_next[0])
 
@@ -208,7 +223,8 @@ class Car(Agent):
 
     def random_slow_down(self, vel) -> Vel:
         vel[0] -= self.model.car_dec * self.model.time_step
-        return vel
+        vel[0] = max(self.vel[0], self.startled_pref_vel)
+        return(vel)
 
     def distance_s(self, distance_abs, vel) -> float:
         return road.distance_in_seconds(distance_abs, vel)
