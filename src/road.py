@@ -2,11 +2,12 @@ import numpy as np
 from mesa.space import ContinuousSpace
 from enum import IntEnum
 from collections import namedtuple
-from typing import NewType, Union, List, Tuple
+from typing import NewType, Union, List, Tuple, Iterable, Optional, Mapping
 
-Vel = NewType('Vel', np.array)
-Pos = NewType('Vel', np.array)
-MaybeVel = Union[None, np.array]
+Number = Union[float, int]
+Array = Mapping[Number, int]
+Vel = Array
+Pos = Array
 
 
 class Direction(IntEnum):
@@ -40,7 +41,7 @@ class Neighbours:
 
 def distance_in_seconds(distance_abs: float,
                         vel_self: Vel,
-                        vel_other: MaybeVel = None) -> float:
+                        vel_other: Optional[Vel] = None) -> float:
     """ Returns the distance to another object in seconds, assuming the object is moving with a constant velocity
     Velocity in the y-dimension is ignored
 
@@ -81,14 +82,14 @@ class Road(ContinuousSpace):
         agent.lane = self.lane_at(pos)
 
     @property
-    def lane_width(self) -> int:
+    def lane_width(self) -> float:
         return self.LANE_WIDTH
 
     def lane_at(self, pos) -> int:
         """Returns the lane number of a position"""
         return int(pos[1] // self.lane_width)
 
-    def center_of_lane(self, lane: int) -> Pos:
+    def center_of_lane(self, lane: int) -> float:
         """Return the position of the center of a lane."""
         return (lane + 0.5) * self.lane_width
 
@@ -141,7 +142,7 @@ class Road(ContinuousSpace):
             return None
         return min(cars, key=lambda car: car.pos[0])
 
-    def neighbours(self, car, lane: int = None) -> Tuple[list, List[float]]:
+    def neighbours(self, car, lane: int = None) -> Tuple[list, list]:
         """Get the first car in a lane in front and back, and the absolute distances (in m) to them if they exist (-1 as default).
         Note that the car_length is subtracted for cars in front of the agent
 

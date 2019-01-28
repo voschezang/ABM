@@ -5,7 +5,7 @@ from mesa import Agent
 from typing import Tuple
 
 import src.road as road
-from .road import Direction, Vel, Pos
+from src.road import Direction, Vel, Pos
 
 
 class CarInFront(enum.Enum):
