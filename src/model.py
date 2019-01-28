@@ -8,24 +8,6 @@ from .car import Car
 import src.data as data
 
 
-def gamma(mu, sigma=1, seconds=1):
-    # mu = k * theta
-    # alpha = k
-    # beta = 1 / theta
-    # sigma = sqrt(alpha) / beta     (standard deviation)
-    #  = sqrt(k) * theta
-    #  = sqrt(k) * mu / k
-    # sigma / mu = k^0.5 * k^-1 = k^-1.5
-    # k = (sigma / mu)^(1 / -1.5)
-    #  = (sigma / mu)^(-2/3)
-    # k = (sigma / mu)**(-2 / 3)
-    if not sigma:
-        return mu
-    k = (mu / sigma)**2
-    theta = mu / k
-    return np.random.gamma(shape=k, scale=theta)
-
-
 class Model(mesa.Model):
     """Traffic flow simulation with multiple lanes and lane-chaning."""
 
@@ -38,10 +20,12 @@ class Model(mesa.Model):
                  density: float = 30,
                  fraction_autonomous=0,
                  max_speed_mu=120,
-                 max_speed_sigma=3,
+                 max_speed_min=100,
+                 max_speed_max=145,
                  min_spacing=2,
                  min_distance_mu=2,
-                 min_distance_sigma=0,
+                 min_distance_min=1,
+                 min_distance_max=3,
                  car_acc=3,
                  car_dec=6,
                  p_slowdown=0.1,
@@ -59,10 +43,8 @@ class Model(mesa.Model):
         n_cars -- number of cars on the road.
         fraction_autonomous -- fraction of `n_cars` that are autonomous vehicles.
         max_speed_mu -- maximum speed cars will try to travel at in km/h (will be converted to m/s).
-        max_speed_sigma -- standard deviation of max_speed.
         min_spacing -- the minimum distance in seconds a car keeps from other cars (front to back). Incorporating the cars' velocity but ignoring the other cars' velocity
         min_distance_mu -- the mean of the mean min-distance for each car. Min-distance is the min. preferred amount of seconds that a car would want to keep from other cars (incl the other car's velocity). A relative distance of x seconds means that an car will reach another car in x seconds.
-        min_distance_sigma -- the standard deviation of the min-distance for each car
         car_acc -- acceleration of the cars (in m\s2).
         car_dec -- deceleration of the cars (in m\s2).
         p_slowdown -- probability of a car slowing down per hour.
@@ -83,10 +65,12 @@ class Model(mesa.Model):
         self.density = self.n_cars / (n_lanes * length / 1000)
         self.fraction_autonomous = fraction_autonomous
         self.max_speed_mu = max_speed_mu / 3.6
-        self.max_speed_sigma = max_speed_sigma
+        self.max_speed_min = max_speed_min / 3.6
+        self.max_speed_max = max_speed_max / 3.6
         self.min_spacing = min_spacing
         self.min_distance_mu = min_distance_mu
-        self.min_distance_sigma = min_distance_sigma
+        self.min_distance_min = min_distance_min
+        self.min_distance_max = min_distance_max
         self.car_acc = car_acc
         self.car_dec = car_dec
         self.p_slowdown = self.probability_per(p_slowdown, seconds=3600)
@@ -134,10 +118,14 @@ class Model(mesa.Model):
             # if normal car
             if i < normal_cars:
                 # TODO use skill/style to determine max_speed, min_distance, p_slowdown
+                print(self.max_speed_min, self.max_speed_max)
                 preferred_speed = self.stochastic_params(
-                    self.max_speed_mu, self.max_speed_sigma, seconds=None)
-                min_distance = np.random.normal(self.min_distance_mu,
-                                                self.min_distance_sigma)
+                    self.max_speed_mu,
+                    limit=(self.max_speed_min, self.max_speed_max))
+
+                min_distance = self.stochastic_params(
+                    self.min_distance_mu,
+                    limit=(self.min_distance_min, self.min_distance_max))
 
                 skill = (np.random.random())**0.5
                 distance_error_sigma = self.max_abs_rel_est_error * (1 - skill)
@@ -169,12 +157,18 @@ class Model(mesa.Model):
         self.space.place_agent(car, car.pos)
         self.schedule.add(car)
 
-    def stochastic_params(self, mean, sigma=1, pos=True, seconds=1):
-        # returns a stochastic parameter
-        if pos:
-            p = gamma(mean, sigma)
-        else:
-            p = np.random.normal(mean, sigma)
+    def stochastic_params(self,
+                          mean,
+                          sigma=1,
+                          limit=[],
+                          pos=True,
+                          seconds=None):
+        # returns a stochastic parameter, within a limit or with a standard deviation (sigma)
+        if limit:
+            return self.triangular(mean, *limit)
+        elif not sigma:
+            return mean
+        p = np.random.normal(mean, sigma)
         if seconds:
             p = self.probability_per(p, seconds)
         return p
@@ -187,3 +181,10 @@ class Model(mesa.Model):
         # the probability per second should exceed the time step length
         assert (seconds >= self.time_step)
         return p * self.time_step / seconds
+
+    def triangular(self, mu, minn=0, maxx=1):
+        assert (minn <= mu), "minn < mu: %f < %f" % (minn, mu)
+        assert (mu <= maxx)
+        sigma_min = mu - minn
+        sigma_plus = maxx - mu
+        return self.random.triangular(sigma_min, mu, sigma_plus)
