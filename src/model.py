@@ -182,9 +182,7 @@ class Model(mesa.Model):
         assert (seconds >= self.time_step)
         return p * self.time_step / seconds
 
-    def triangular(self, mu, minn=0, maxx=1):
-        assert (minn <= mu), "minn < mu: %f < %f" % (minn, mu)
-        assert (mu <= maxx)
-        sigma_min = mu - minn
-        sigma_plus = maxx - mu
-        return self.random.triangular(sigma_min, mu, sigma_plus)
+    def triangular(self, mode, minn=0, maxx=1):
+        assert (minn <= mode), "minn < mode: %f < %f" % (minn, mode)
+        assert (mode <= maxx)
+        return self.random.triangular(minn, mode, maxx)
