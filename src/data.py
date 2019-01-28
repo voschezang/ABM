@@ -15,7 +15,7 @@ def flow(model):
     flow_in_timestep = model.data.flow
     # reset flow counter
     model.data.flow = 0
-    return flow_in_timestep
+    return flow_in_timestep / model.space.n_lanes
 
 
 class Data(DataCollector):

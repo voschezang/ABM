@@ -162,7 +162,6 @@ class Car(Agent):
         
         if (self.startled == True) & (self.recup_turns == 0):
             self.startled = False
-            print('ahhyis')
                 
         # prevent negative velocities
         vel_next[0] = max(0, vel_next[0])
