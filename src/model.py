@@ -21,7 +21,7 @@ def gamma(mu, sigma=1, seconds=1):
     # k = (sigma / mu)**(-2 / 3)
     if not sigma:
         return mu
-    k = (mu / sigma) ** 2
+    k = (mu / sigma)**2
     theta = mu / k
     return np.random.gamma(shape=k, scale=theta)
 
@@ -48,7 +48,7 @@ class Model(mesa.Model):
                  bias_right_lane=1,
                  time_step=0.1,
                  seed: int = None,
-                 verbose=3):    
+                 verbose=3):
         """Initialise the traffic model.
 
         Parameters
@@ -93,7 +93,7 @@ class Model(mesa.Model):
         self.bias_right_lane = bias_right_lane
         self.lane_change_time = 2  # TODO use rotation matrix
         self.max_abs_rel_est_error = 0.04
-        
+
         self.space = road.Road(self, length, n_lanes, torus=True)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)

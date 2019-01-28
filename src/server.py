@@ -9,13 +9,14 @@ from .SimpleContinuousModule import SimpleCanvas
 length = 1000
 
 model_params = {
-    "length": length,
+    "length":
+    length,
     "n_lanes":
     UserSettableParameter(UserSettableParameter.SLIDER, "Number of Lanes", 2,
                           1, Model.MAX_LANES, 1),
     "density":
-    UserSettableParameter(UserSettableParameter.SLIDER, "Density (cars/km)", 10,
-                          1, 100, 5),
+    UserSettableParameter(UserSettableParameter.SLIDER, "Density (cars/km)",
+                          10, 1, 100, 5),
     "fraction_autonomous":
     UserSettableParameter(UserSettableParameter.SLIDER,
                           "Fraction of autonomous cars", 0, 0, 1, 0.1),

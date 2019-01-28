@@ -21,11 +21,10 @@ def flow(model):
 class Data(DataCollector):
     def __init__(self, flow_reference_point):
         super().__init__(model_reporters={
-                #"Density": density,
-                "Flow": flow
-            })
+            #"Density": density,
+            "Flow": flow
+        })
 
         # setup data collectotion variables
         self.flow_reference_point = flow_reference_point
         self.flow = 0
-
