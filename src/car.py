@@ -158,11 +158,11 @@ class Car(Agent):
             if (self.vel[0] > self.startled_pref_vel):
                 vel_next = self.random_slow_down(vel_next)
             else:
-                vel_next = self.vel
                 self.recup_turns -= 1
         
-        if self.recup_turns == 0:
-            self.startled == False
+        if (self.startled == True) & (self.recup_turns == 0):
+            self.startled = False
+            print('ahhyis')
                 
         # prevent negative velocities
         vel_next[0] = max(0, vel_next[0])
@@ -171,6 +171,8 @@ class Car(Agent):
 
     def accelerate_vel(self, vel) -> Vel:
         # returns accelerated vel, upper limited by the maximum speed
+        if self.startled:
+            return vel
         vel[0] = min(vel[0] + self.model.car_acc * self.model.time_step,
                      self.preferred_speed)
         return vel
@@ -223,8 +225,7 @@ class Car(Agent):
 
     def random_slow_down(self, vel) -> Vel:
         vel[0] -= self.model.car_dec * self.model.time_step
-        vel[0] = max(self.vel[0], self.startled_pref_vel)
-        return(vel)
+        return vel
 
     def distance_s(self, distance_abs, vel) -> float:
         return road.distance_in_seconds(distance_abs, vel)
