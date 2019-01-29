@@ -20,8 +20,6 @@ class Model(mesa.Model):
                  density: float = 30,
                  fraction_autonomous=0,
                  max_speed_mu=120,
-                 max_speed_min=100,
-                 max_speed_max=145,
                  min_spacing=2,
                  min_distance_mu=2,
                  min_distance_min=1,
@@ -65,8 +63,8 @@ class Model(mesa.Model):
         self.density = self.n_cars / (n_lanes * length / 1000)
         self.fraction_autonomous = fraction_autonomous
         self.max_speed_mu = max_speed_mu / 3.6
-        self.max_speed_min = max_speed_min / 3.6
-        self.max_speed_max = max_speed_max / 3.6
+        self.max_speed_min = (max_speed_mu - 15) / 3.6
+        self.max_speed_max = (max_speed_mu + 10)  / 3.6
         self.min_spacing = min_spacing
         self.min_distance_mu = min_distance_mu
         self.min_distance_min = min_distance_min
@@ -76,7 +74,8 @@ class Model(mesa.Model):
         self.p_slowdown = self.probability_per(p_slowdown, seconds=3600)
         self.bias_right_lane = bias_right_lane
         self.lane_change_time = 2  # TODO use rotation matrix
-        self.max_abs_rel_est_error = 0.04
+        self.max_abs_rel_est_error = 0.1
+
 
         self.space = road.Road(self, length, n_lanes, torus=True)
 
@@ -118,7 +117,7 @@ class Model(mesa.Model):
             # if normal car
             if i < normal_cars:
                 # TODO use skill/style to determine max_speed, min_distance, p_slowdown
-                print(self.max_speed_min, self.max_speed_max)
+                #print(self.max_speed_min, self.max_speed_max)
                 preferred_speed = self.stochastic_params(
                     self.max_speed_mu,
                     limit=(self.max_speed_min, self.max_speed_max))
@@ -127,9 +126,9 @@ class Model(mesa.Model):
                     self.min_distance_mu,
                     limit=(self.min_distance_min, self.min_distance_max))
 
-                skill = (np.random.random())**0.5
+                skill = (np.random.random())
                 distance_error_sigma = self.max_abs_rel_est_error * (1 - skill)
-                p_slowdown = 0.05 * self.p_slowdown + 0.95 * self.p_slowdown * (
+                p_slowdown = 0.5 * self.p_slowdown + self.p_slowdown * (
                     1 - skill)
                 # p_slowdown = np.random.normal(self.p_slowdown, 0)
                 # bias right lane same for all normal cars

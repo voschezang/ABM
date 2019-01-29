@@ -60,10 +60,13 @@ class Car(Agent):
         self.target_lane = None
         self.distance_rel_error = 0
         self.distance_max_abs_rel_error = 0.1  # in %/100
-
         self.startled = False
         self.startled_pref_vel = 50 / 3.6
         self.recup_turns = 0
+        if autonomous:
+            self.min_spacing = 1
+        else:
+            self.min_spacing = self.model.min_spacing
 
     @property
     def length(self) -> float:
@@ -190,7 +193,7 @@ class Car(Agent):
             return no
 
         distance_s = self.distance_s(distance_abs, vel)
-        if distance_s < self.model.min_spacing + self.model.time_step:
+        if distance_s < self.min_spacing + self.model.time_step:
             d['distance_abs'] = distance_abs
             return (CarInFront.min_spacing, d)
 
