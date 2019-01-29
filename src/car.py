@@ -216,9 +216,9 @@ class Car(Agent):
 
         elif reason == CarInFront.min_relative_distance:
             distance_rel_s = distances['distance_rel_s']
-            d_vel_rel = distance_rel_s / self.min_distance
-            d_vel = min(self.model.car_dec, d_vel_rel) * self.model.time_step
-            vel[0] = self.vel[0] * (1 - d_vel)
+            ratio =  (self.min_distance - distance_rel_s) / self.min_distance 
+            d_vel = self.model.car_dec * ratio * self.model.time_step
+            vel[0] = self.vel[0] - d_vel
 
         return vel
 
