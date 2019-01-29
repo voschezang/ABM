@@ -29,8 +29,10 @@ n_lanes -- number of lanes.
 flow -- number of cars generated per lane per second (stochastic)
 
 max_speed_mu -- maximum speed cars will try to travel at in km/h (will be converted to m/s): 120
-max_speed_min
-max_speed_max
+
+max_speed_min --
+
+max_speed_max --
 
 ~max_speed_sigma -- standard deviation~
 
@@ -39,8 +41,11 @@ car_length -- length of each car: 4.4m,http://cardriveby.com/what-is-the-average
 min_spacing -- the minimum distance in seconds a car keeps from other cars (front to back). Incorporating the cars' velocity but ignoring the other cars' velocity: 2 seconds, https://2seconden.nl/
 
 min_distance_mu -- the mean of the mean min-distance for each car. Min-distance is the min. preferred amount of seconds that a car would want to keep from other cars (incl the other car's velocity). A relative distance of x seconds means that an car will reach another car in x seconds.
-min_distance_min
-min_distance_max
+
+min_distance_min --
+
+min_distance_max --
+
 ~min_distance_sigma -- the standard deviation of the min-distance for each car~
 
 car_acc -- acceleration of the cars (in m\s2).
@@ -64,66 +69,9 @@ bias_right_lane_sigma -- standard deviation
 - Slow down if another car is in front of agent (within range)
 - Disable backwards movement
 
-### Extended rules (outdated)
+### Extended rules (intuitive)
 - Overtake any car in front of agent (if possible)
-
-overtake reasoning  (outdated)
-```python
-def step():
- update_vel()
- move()
-
-def update_vel():
- self.vel_next = compute_next_vel()
-
-def move():
- update_current_vel()
- update_pos()
-
-def update_pos():
- self.pos += self.vel * dt
- ... # update model.space
-
-def update_current_vel():
-  self.vel = self.nex_vel
-  
-def update_next_vel():
-  # returns the intended velocity of agent
-  # 1
-  next_vel = accelerate(self.vel) # accelerate if not at max speed
-
-  # 2 prevent collisions
-  if car_in_front:
-    if not right_of_center_of_lane: # i.e. in the middle or left
-      success, vel_next = steer_to_lane(vel_next, [left,right])
-    else:
-      success, vel_next = steer_to_lane(vel_next, [right, left])
-    if not success:
-      next_vel = brake(next_vel)
-
-  else: # no car in front
-    if chance to go to the right lane > random(): # (probability based on personal preference)
-       _, vel_next = steer_to_lane(vel_next, [right])
-    else:
-      vel_next = center_on_current_lane(vel_next)
-      
-  self.vel_next = vel_next
-
-def steer_to_lane(direction=[left,right]):
- # returns a tuple (success: bool, vel: (int,int) )
- for direction in directions:
-  if can_go_to_lane(direction):
-     self.vel_next = steer(direction)
-     return (True, vel)
-  return (False, center_on_current_lane(vel_next))
-
-def center_on_current_lane(vel_next)
- # returns the required velocity to center the can to on the current lane
- ...
-
-```
-
-
+- else, go to right lane (if possible)
 
 ## Scenario's
 This research focusses on the emergence of traffic jams in an agent-based system
@@ -143,15 +91,6 @@ Hoeveel banen moeten toegevoegd worden om files te vermijden
 
 optioneel: rij-strategie, bv aanvallend vs rustig rijden
 - welke strategie is het beste?
-
-
-## zeilboot
-beste route op basis van lokale informatie (vijandige boten)
-agents kiezen strategie: copy, aanvallend, etc
-- welke strategie is het beste?
-- alt: hoeveel boten moet een agent in de gaten houden?
-
-
 
 
 # Setup
