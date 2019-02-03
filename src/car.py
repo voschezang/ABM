@@ -217,7 +217,7 @@ class Car(Agent):
 
         elif reason == CarInFront.min_relative_distance:
             distance_rel_s = distances['distance_rel_s']
-            ratio =  (self.min_distance - distance_rel_s) / self.min_distance 
+            ratio = (self.min_distance - distance_rel_s) / self.min_distance
             d_vel = self.model.car_dec * ratio * self.model.time_step
             vel[0] = self.vel[0] - d_vel
 
@@ -266,21 +266,8 @@ class Car(Agent):
 
     def steer(self, vel: Vel, direction: Direction) -> Vel:
         """Steer in the specified direction, such that a complete lane-change can be performed in `lane_change_time`"""
-        # TODO decrease vel in x dimension (rotation matrix)
         vel[1] = direction * self.model.space.lane_width / self.model.lane_change_time
         return vel
-
-    # def steer(self, vel, degrees): TODO implement
-    #     """Rotate the velocity vector with a number of degrees."""
-    #     # example:
-    #     # change lanes in 2 seconds, determine angle
-    #     # angle = ArcTan(3.5 / 2 / 33) = 3
-    #     angle = np.radians(degrees)
-    #     cos = np.cos(angle)
-    #     sin = np.sin(angle)
-    #     rotation_matrix = np.array([[cos, -sin], [sin, cos]])
-    #     vel = rotation_matrix @ vel
-    #     return vel
 
     def center_on_current_lane(self, vel: Vel) -> Vel:
         d = self.model.space.distance_from_center_of_lane(self.pos)
@@ -292,8 +279,7 @@ class Car(Agent):
         if direction * (vel[1] * self.model.time_step + d) >= 0:
             # center the car in the lane
             self.pos[1] = self.model.space.center_of_lane(
-                self.lane
-            )  # TODO setting the position might seem a bit dangerous,
+                self.lane)  # setting the position might seem a bit dangerous,
             # but this is okay for now since the y-pos of this car will not be used by other cars.
             vel[1] = 0
             self.target_lane = None
