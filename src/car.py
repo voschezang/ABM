@@ -20,6 +20,7 @@ class CarInFront(enum.Enum):
 class Car(Agent):
     LENGTH = 4.4  # in meters
     WIDTH = 1.8  # in meters
+    STAGE_LIST = ["update_distance_rel_error", "update_vel_next", "move"]
 
     def __init__(self,
                  unique_id,
@@ -77,9 +78,9 @@ class Car(Agent):
         return self.WIDTH
 
     def step(self):
-        #self.update_distance_rel_error()
-        self.update_vel_next()
-        self.move()
+        # manually run all stages
+        for stage in STAGE_LIST:
+            getattr(self, stage)()
 
     def move(self):
         self.vel = self.vel_next

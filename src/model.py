@@ -76,15 +76,12 @@ class Model(mesa.Model):
         self.lane_change_time = 2  # TODO use rotation matrix
         self.max_abs_rel_est_error = 0.1
 
-
         self.space = road.Road(self, length, n_lanes, torus=True)
 
         # uncomment one of the two lines below to select the timing schedule (random, or staged)
         # self.schedule = RandomActivation(self)
         self.schedule = StagedActivation(
-            self, ["update_distance_rel_error", "update_vel_next", "move"],
-            shuffle=False,
-            shuffle_between_stages=False)
+            self, Car.STAGE_LIST, shuffle=False, shuffle_between_stages=False)
 
         # create the data collector object
         self.data = data.Data(flow_reference_point=length / 2)
