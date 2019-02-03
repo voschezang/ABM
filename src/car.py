@@ -20,6 +20,7 @@ class CarInFront(enum.Enum):
 class Car(Agent):
     LENGTH = 4.4  # in meters
     WIDTH = 1.8  # in meters
+    STAGE_LIST = ["update_distance_rel_error", "update_vel_next", "move"]
 
     def __init__(self,
                  unique_id,
@@ -60,10 +61,13 @@ class Car(Agent):
         self.target_lane = None
         self.distance_rel_error = 0
         self.distance_max_abs_rel_error = 0.1  # in %/100
-
         self.startled = False
         self.startled_pref_vel = 50 / 3.6
         self.recup_turns = 0
+        if autonomous:
+            self.min_spacing = 1
+        else:
+            self.min_spacing = self.model.min_spacing
 
     @property
     def length(self) -> float:
@@ -74,9 +78,9 @@ class Car(Agent):
         return self.WIDTH
 
     def step(self):
-        #self.update_distance_rel_error()
-        self.update_vel_next()
-        self.move()
+        # manually run all stages
+        for stage in STAGE_LIST:
+            getattr(self, stage)()
 
     def move(self):
         self.vel = self.vel_next
@@ -190,7 +194,7 @@ class Car(Agent):
             return no
 
         distance_s = self.distance_s(distance_abs, vel)
-        if distance_s < self.model.min_spacing + self.model.time_step:
+        if distance_s < self.min_spacing + self.model.time_step:
             d['distance_abs'] = distance_abs
             return (CarInFront.min_spacing, d)
 
@@ -213,9 +217,9 @@ class Car(Agent):
 
         elif reason == CarInFront.min_relative_distance:
             distance_rel_s = distances['distance_rel_s']
-            d_vel_rel = distance_rel_s / self.min_distance
-            d_vel = min(self.model.car_dec, d_vel_rel) * self.model.time_step
-            vel[0] = self.vel[0] * (1 - d_vel)
+            ratio = (self.min_distance - distance_rel_s) / self.min_distance
+            d_vel = self.model.car_dec * ratio * self.model.time_step
+            vel[0] = self.vel[0] - d_vel
 
         return vel
 
@@ -262,21 +266,8 @@ class Car(Agent):
 
     def steer(self, vel: Vel, direction: Direction) -> Vel:
         """Steer in the specified direction, such that a complete lane-change can be performed in `lane_change_time`"""
-        # TODO decrease vel in x dimension (rotation matrix)
         vel[1] = direction * self.model.space.lane_width / self.model.lane_change_time
         return vel
-
-    # def steer(self, vel, degrees): TODO implement
-    #     """Rotate the velocity vector with a number of degrees."""
-    #     # example:
-    #     # change lanes in 2 seconds, determine angle
-    #     # angle = ArcTan(3.5 / 2 / 33) = 3
-    #     angle = np.radians(degrees)
-    #     cos = np.cos(angle)
-    #     sin = np.sin(angle)
-    #     rotation_matrix = np.array([[cos, -sin], [sin, cos]])
-    #     vel = rotation_matrix @ vel
-    #     return vel
 
     def center_on_current_lane(self, vel: Vel) -> Vel:
         d = self.model.space.distance_from_center_of_lane(self.pos)
@@ -288,8 +279,7 @@ class Car(Agent):
         if direction * (vel[1] * self.model.time_step + d) >= 0:
             # center the car in the lane
             self.pos[1] = self.model.space.center_of_lane(
-                self.lane
-            )  # TODO setting the position might seem a bit dangerous,
+                self.lane)  # setting the position might seem a bit dangerous,
             # but this is okay for now since the y-pos of this car will not be used by other cars.
             vel[1] = 0
             self.target_lane = None
