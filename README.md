@@ -37,7 +37,7 @@ python run.py
 pythonw run.py
 ```
 
-# Analysis
+## Analysis
 
 Open `analysis.ipynb` with jupyter notebook.
 
@@ -45,7 +45,7 @@ Open `analysis.ipynb` with jupyter notebook.
 
 
 
-## Basic agent rules
+# Basic agent rules
 ### Nagel-Schreckenberg rules
 - Accelerate if agent is not driving at maximum speed
 - Slow down if another car is in front of agent (within range)
@@ -55,14 +55,14 @@ Open `analysis.ipynb` with jupyter notebook.
 - Overtake any car in front of agent (if possible)
 - else, go to right lane (if possible)
 
-## Scenario's
+# Scenario's
 This research focusses on the emergence of traffic jams in an agent-based system
 - What is the minimal perturbation to cause a traffic jam? (e.g. a braking car)
 - What happens to this threshold if more lanes are added?
 - How does the minimum speed affect this behaviour?
 
 
-## Parameters
+# Parameters
 
 length -- length of the road in meters.
 
@@ -105,7 +105,7 @@ bias_right_lane_sigma -- standard deviation
 
 
 
-## Extensions / TODO
+# Extensions / TODO
 - make `lane_change_time` dependent on current velocity (cars that have zero velocity should take longer to change lanes)
 - autonomous agents
  - - communication (e.g. accelerate to global average of autonomous (nearby) cars)
