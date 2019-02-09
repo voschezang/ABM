@@ -1,6 +1,5 @@
-# Agend-Based Model of cars
-ABM project course [Drive](https://docs.google.com/document/d/1eFtdlH49CX-1uuGwS9rvptri8tylCG4f30oYA8jWjRM/edit), [Overleaf](https://www.overleaf.com/1484861915nsjhycdfwwyq)
-
+# Traffic flow model
+An Agend-Based Model (ABM) used to study the emergence of traffic jams on highways.
 
 # Setup
 
@@ -51,15 +50,9 @@ Open `analysis.ipynb` with jupyter notebook.
 - Slow down if another car is in front of agent (within range)
 - Disable backwards movement
 
-### Extended rules (intuitive)
+### Extended rules
 - Overtake any car in front of agent (if possible)
 - else, go to right lane (if possible)
-
-# Scenario's
-This research focusses on the emergence of traffic jams in an agent-based system
-- What is the minimal perturbation to cause a traffic jam? (e.g. a braking car)
-- What happens to this threshold if more lanes are added?
-- How does the minimum speed affect this behaviour?
 
 
 # Parameters
