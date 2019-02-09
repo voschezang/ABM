@@ -9,7 +9,11 @@ import src.data as data
 
 
 class Model(mesa.Model):
-    """Traffic flow simulation with multiple lanes and lane-chaning."""
+    # This documentation can be viewed in the browser simulation by clicking on "About"
+    """Traffic flow simulation with multiple lanes and lane-chaning. 
+    Blue cars are driver by humans and red cars are autonomous.
+    The graph shows the flow, measured as the number of cars (passing the midpoint of the road) per lane, each timestep.
+    """
 
     BIAS_RIGHT_LANE_SECONDS = 1
     MAX_LANES = 10

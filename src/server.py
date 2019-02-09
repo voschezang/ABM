@@ -37,9 +37,10 @@ def car_portrayal(agent):
         "h": agent.width /
         (Model.MAX_LANES * agent.model.space.lane_width),  # relative
         "Filled": "true",
-        "Color": "rgba(0, 0, 255, 1.0)" if not agent.autonomous else "red",
-        "text": agent.unique_id,
-        "textColor": "black"
+        "Color": "rgba(0, 0, 255, 1.0)" if not agent.autonomous else "red"
+        # show number of each car, useful for debugging
+        #"text": agent.unique_id,
+        #"textColor": "black"
     }
 
 
@@ -47,9 +48,6 @@ car_canvas = SimpleCanvas(car_portrayal, 800, 200)
 
 chart = ChartModule(
     [{
-        "Label": "Density",
-        "Color": "blue"
-    }, {
         "Label": "Flow",
         "Color": "red"
     }],
