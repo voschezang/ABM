@@ -1,7 +1,7 @@
 # Traffic flow model
 An Agend-Based Model (ABM) used to study the emergence of traffic jams on highways.
 
-<img src='simulation.png' style="height:100px;"></img>
+<img src='simulation.png' style="height:10px;"></img>
 
 # Setup
 
