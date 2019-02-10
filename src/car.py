@@ -278,9 +278,7 @@ class Car(Agent):
         # check if moving in direction of the center, would result in overshooting
         if direction * (vel[1] * self.model.time_step + d) >= 0:
             # center the car in the lane
-            self.pos[1] = self.model.space.center_of_lane(
-                self.lane)  # setting the position might seem a bit dangerous,
-            # but this is okay for now since the y-pos of this car will not be used by other cars.
+            self.pos[1] = self.model.space.center_of_lane(self.lane)
             vel[1] = 0
             self.target_lane = None
             return vel
